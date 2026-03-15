@@ -136,7 +136,7 @@ ids-validator/
 
 ## Technologies utilisées
 
-- **Backend** : Python, Flask, [ifcopenshell](https://ifcopenshell.org/) (inclut ifctester)
+- **Backend** : Python, Flask, [ifcopenshell](https://ifcopenshell.org/), [ifctester](https://pypi.org/project/ifctester/)
 - **Frontend** : HTML/CSS/JavaScript vanilla, Chart.js, Three.js, web-ifc
 
 ## Contribuer
