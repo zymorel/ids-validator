@@ -38,6 +38,11 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
+> **Note `ifcopenshell`** : Si l'installation via pip échoue, utilisez conda :
+> ```bash
+> conda install -c conda-forge ifcopenshell
+> ```
+
 ### 3. Télécharger les fichiers web-ifc
 
 ```bash
@@ -58,9 +63,7 @@ Le serveur démarre sur `http://localhost:5000`.
 
 ### Ouvrir l'interface
 
-Ouvrir le fichier `ids_validator.html` dans un navigateur.
-
-> **Note** : Le serveur doit être actif pour que l'interface fonctionne. Un indicateur de connexion est affiché dans l'interface.
+Ouvrir **`http://localhost:5000`** dans un navigateur. L'interface est servie directement par Flask.
 
 ### Valider un modèle
 
@@ -99,6 +102,7 @@ ids-validator/
 
 | Méthode | Route | Description |
 |--------|-------|-------------|
+| `GET` | `/` | Interface utilisateur |
 | `GET` | `/ping` | Vérification de l'état du serveur |
 | `POST` | `/valider` | Validation IFC + IDS (retourne JSON) |
 | `GET` | `/ifc` | Récupère le fichier IFC en mémoire |
@@ -132,7 +136,7 @@ ids-validator/
 
 ## Technologies utilisées
 
-- **Backend** : Python, Flask, ifcopenshell, ifctester
+- **Backend** : Python, Flask, [ifcopenshell](https://ifcopenshell.org/) (inclut ifctester)
 - **Frontend** : HTML/CSS/JavaScript vanilla, Chart.js, Three.js, web-ifc
 
 ## Contribuer

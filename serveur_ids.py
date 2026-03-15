@@ -358,6 +358,19 @@ def get_ifc():
 
 
 # ═══════════════════════════════════════════════════════════
+#  GET /  — interface utilisateur
+# ═══════════════════════════════════════════════════════════
+
+@app.route("/", methods=["GET"])
+def index():
+    """Sert l'interface utilisateur depuis le même serveur."""
+    html_path = os.path.join(SCRIPT_DIR, "ids_validator.html")
+    if not os.path.exists(html_path):
+        return "ids_validator.html introuvable", 404
+    return send_file(html_path, mimetype="text/html")
+
+
+# ═══════════════════════════════════════════════════════════
 #  GET /ping
 # ═══════════════════════════════════════════════════════════
 
