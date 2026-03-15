@@ -1,0 +1,33 @@
+# Environnements virtuels Python
+.venv/
+.venv-1/
+venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Fichiers IFC (souvent volumineux)
+*.ifc
+
+# Cache web-ifc (régénéré par setup_webifc.py)
+web-ifc-cache/
+web-ifc-cache_old/
+
+# Dossier temporaire
+Temp/
+
+# Éditeurs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

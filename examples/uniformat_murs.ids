@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ids:ids xmlns:xs="http://www.w3.org/2001/XMLSchema"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://standards.buildingsmart.org/IDS http://standards.buildingsmart.org/IDS/1.0/ids.xsd"
+         xmlns:ids="http://standards.buildingsmart.org/IDS">
+
+  <ids:info>
+    <ids:title>Classification Uniformat — Murs uniquement</ids:title>
+    <ids:version>1.0</ids:version>
+    <ids:description>Chaque mur doit avoir une classification Uniformat.</ids:description>
+    <ids:author>formation@ids.com</ids:author>
+    <ids:date>2026-03-07</ids:date>
+  </ids:info>
+
+  <ids:specifications>
+
+    <ids:specification ifcVersion="IFC4X3_ADD2"
+                       name="Classification Uniformat — Murs"
+                       identifier="SP-01"
+                       description="Chaque IfcWall doit être associé à une classification Uniformat."
+                       instructions="Dans Revit, appliquer un Assembly Code Uniformat à chaque mur.">
+      <ids:applicability minOccurs="1" maxOccurs="unbounded">
+        <ids:entity>
+          <ids:name>
+            <ids:simpleValue>IFCWALL</ids:simpleValue>
+          </ids:name>
+        </ids:entity>
+      </ids:applicability>
+      <ids:requirements>
+        <ids:classification cardinality="required"
+                            instructions="Le mur doit avoir une classification dont le système est 'Uniformat'.">
+          <ids:system>
+            <ids:simpleValue>Uniformat</ids:simpleValue>
+          </ids:system>
+        </ids:classification>
+      </ids:requirements>
+    </ids:specification>
+
+  </ids:specifications>
+
+</ids:ids>

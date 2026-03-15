@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>IDS Validator — BIM Quality Control</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+:root{
+  --bg:#090c0f;--sur:#0f1318;--bdr:#1c2128;--bdr2:#262d38;
+  --txt:#b8c0cc;--txtd:#3d4550;--txth:#eef1f6;
+  --grn:#00e5a0;--grnd:#00e5a018;
+  --red:#ff3d5a;--redd:#ff3d5a18;
+  --blu:#4d9fff;--blud:#4d9fff14;
+  --acc:#f0b429;--accd:#f0b42914;
+  --pur:#a78bfa;
+  --mono:'JetBrains Mono',monospace;--sans:'Syne',sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);font-family:var(--mono);font-size:12px;line-height:1.6;min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(var(--bdr) 1px,transparent 1px),linear-gradient(90deg,var(--bdr) 1px,transparent 1px);background-size:40px 40px;opacity:.3;pointer-events:none;z-index:0}
+.app{position:relative;z-index:1;display:flex;flex-direction:column;height:100vh}
+.topbar{display:flex;align-items:center;gap:16px;padding:0 20px;height:48px;flex-shrink:0;background:var(--sur);border-bottom:1px solid var(--bdr)}
+.logo{font-family:var(--sans);font-size:17px;font-weight:800;color:var(--txth);letter-spacing:-.02em}
+.logo span{color:var(--grn)}
+.logo-tag{font-size:8px;font-weight:600;letter-spacing:.2em;color:var(--acc);text-transform:uppercase;margin-right:6px}
+.srv{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--txtd);margin-left:auto}
+.sdot{width:7px;height:7px;border-radius:50%;background:var(--txtd);transition:background .3s}
+.sdot.ok{background:var(--grn);box-shadow:0 0 6px var(--grn)}.sdot.err{background:var(--red);box-shadow:0 0 6px var(--red)}
+.tabnav{display:flex;padding:0 20px;flex-shrink:0;background:var(--sur);border-bottom:1px solid var(--bdr)}
+.tbtn{padding:9px 18px;font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--txtd);background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;transition:color .2s,border-color .2s;white-space:nowrap}
+.tbtn:hover{color:var(--txt)}.tbtn.active{color:var(--txth);border-bottom-color:var(--grn)}
+.panels{flex:1;overflow:hidden;position:relative}
+.panel{display:none;height:100%;overflow-y:auto}
+.panel.active{display:flex;flex-direction:column}
+
+/* UPLOAD */
+.upload-wrap{padding:28px 20px;max-width:820px;margin:0 auto;width:100%}
+.sec-title{font-family:var(--sans);font-size:9px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--txtd);margin-bottom:10px}
+.drop-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.dzone{border:1px solid var(--bdr2);border-radius:4px;padding:24px 16px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;position:relative;background:var(--sur)}
+.dzone:hover,.dzone.drag{border-color:var(--blu);background:var(--blud)}.dzone.loaded{border-color:var(--grn);background:var(--grnd)}
+.dzone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.dzone-icon{font-size:24px;margin-bottom:8px;display:block}.dzone-lbl{font-family:var(--sans);font-size:12px;font-weight:600;color:var(--txth);margin-bottom:3px}
+.dzone-hint{font-size:10px;color:var(--txtd)}.dzone-name{margin-top:6px;font-size:10px;color:var(--grn);word-break:break-all}
+.btn-run{width:100%;padding:14px;background:var(--grn);color:#000;border:none;border-radius:4px;font-family:var(--sans);font-size:13px;font-weight:700;cursor:pointer;transition:opacity .2s,transform .1s;margin-bottom:24px}
+.btn-run:hover:not(:disabled){opacity:.85;transform:translateY(-1px)}.btn-run:disabled{opacity:.3;cursor:not-allowed}.btn-run.loading{background:var(--bdr2);color:var(--txtd)}
+.err-box{background:var(--redd);border:1px solid var(--red);border-radius:4px;padding:12px;color:var(--red);font-size:11px;margin-bottom:14px;display:none}
+.bilan-row{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:24px}
+.bcard{background:var(--sur);border:1px solid var(--bdr);border-radius:4px;padding:14px}
+.bcard .v{font-family:var(--sans);font-size:26px;font-weight:800;line-height:1;margin-bottom:2px}.bcard .l{font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--txtd)}
+.c-blu .v{color:var(--blu)}.c-acc .v{color:var(--acc)}.c-grn .v{color:var(--grn)}.c-red .v{color:var(--red)}.c-pur .v{color:var(--pur)}
+.spec-block{background:var(--sur);border:1px solid var(--bdr);border-radius:4px;margin-bottom:8px;overflow:hidden}
+.spec-hdr{display:flex;align-items:center;gap:10px;padding:11px 14px;cursor:pointer;user-select:none;transition:background .15s}.spec-hdr:hover{background:var(--bdr)}
+.sbadge{font-size:9px;font-weight:700;letter-spacing:.1em;padding:2px 7px;border-radius:2px;flex-shrink:0}
+.sbadge.pass{background:var(--grnd);color:var(--grn);border:1px solid var(--grn)}.sbadge.fail{background:var(--redd);color:var(--red);border:1px solid var(--red)}
+.sname{font-family:var(--sans);font-size:12px;font-weight:600;color:var(--txth);flex:1}
+.scnt{font-size:10px;color:var(--txtd);flex-shrink:0}.scnt .ok{color:var(--grn)}.scnt .ko{color:var(--red)}
+.schev{color:var(--txtd);font-size:10px;transition:transform .2s;flex-shrink:0}.spec-block.open .schev{transform:rotate(90deg)}
+.pbar{height:2px;background:var(--bdr);margin:0 14px}.pbar-fill{height:100%;border-radius:1px;transition:width .5s}
+.sdetail{display:none;border-top:1px solid var(--bdr)}.spec-block.open .sdetail{display:block}
+.dsec{padding:10px 14px}.dsec+.dsec{border-top:1px solid var(--bdr)}
+.dsec-title{font-size:9px;letter-spacing:.15em;text-transform:uppercase;font-weight:600;margin-bottom:6px}.dsec-title.ok{color:var(--grn)}.dsec-title.ko{color:var(--red)}
+.el-list{display:flex;flex-direction:column;gap:2px;max-height:160px;overflow-y:auto}
+.el-item{display:flex;align-items:center;gap:7px;padding:4px 7px;border-radius:2px;font-size:10px;cursor:pointer;transition:opacity .15s}.el-item:hover{opacity:.75}
+.el-item.ok{background:var(--grnd)}.el-item.ko{background:var(--redd)}
+.el-id{font-weight:700;color:var(--txtd);flex-shrink:0;min-width:42px}.el-type{color:var(--blu);flex-shrink:0}.el-nom{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.more{font-size:9px;color:var(--txtd);padding:3px 7px;font-style:italic}
+.xbar{display:flex;gap:8px;margin-top:18px}
+.xbtn{padding:7px 14px;border:1px solid var(--bdr2);background:var(--sur);color:var(--txt);border-radius:3px;font-family:var(--mono);font-size:10px;cursor:pointer;transition:border-color .2s,color .2s}.xbtn:hover{border-color:var(--acc);color:var(--acc)}
+
+/* 3D VIEWER */
+.viewer-wrap{display:flex;flex:1;height:100%;overflow:hidden}
+.vtb{width:42px;flex-shrink:0;background:var(--sur);border-right:1px solid var(--bdr);display:flex;flex-direction:column;align-items:center;padding:8px 0;gap:4px}
+.vtbtn{width:30px;height:30px;border:1px solid var(--bdr2);background:none;border-radius:3px;cursor:pointer;color:var(--txtd);font-size:13px;display:flex;align-items:center;justify-content:center;transition:all .2s}
+.vtbtn:hover{color:var(--txth);background:var(--bdr)}.vtbtn.active{color:var(--grn);border-color:var(--grn);background:var(--grnd)}
+.vtb-sep{width:22px;height:1px;background:var(--bdr);margin:4px 0}
+.canvas-zone{flex:1;position:relative;background:#060810;overflow:hidden}
+#viewerCanvas{width:100%;height:100%;display:block;cursor:crosshair}
+.v-overlay{position:absolute;top:10px;left:10px;display:flex;flex-direction:column;gap:6px;pointer-events:none}
+.filter-pills{display:flex;gap:6px;pointer-events:all}
+.fpill{padding:3px 10px;border-radius:20px;font-size:9px;font-weight:600;cursor:pointer;border:1px solid;transition:all .15s}
+.fpill.all{border-color:var(--bdr2);color:var(--txtd)}.fpill.all.on{background:var(--bdr2);color:var(--txth)}
+.fpill.ok{border-color:var(--grn);color:var(--grn)}.fpill.ok.on{background:var(--grn);color:#000}
+.fpill.ko{border-color:var(--red);color:var(--red)}.fpill.ko.on{background:var(--red);color:#fff}
+.v-loading{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#060810ee;gap:14px;z-index:10}
+.v-loading.hidden{display:none}
+.v-load-title{font-family:var(--sans);font-size:14px;color:var(--txth)}
+.v-progress-bar{width:300px;height:3px;background:var(--bdr);border-radius:2px;overflow:hidden}
+.v-progress-fill{height:100%;background:var(--grn);border-radius:2px;width:0%;transition:width .4s}
+.v-load-sub{font-size:10px;color:var(--txtd);min-height:16px}
+.v-log{width:320px;font-size:9px;color:var(--txtd);max-height:80px;overflow-y:auto;line-height:2;text-align:left}
+.vph{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--txtd);gap:10px;text-align:center;padding:40px;position:absolute;inset:0}
+.vph-big{font-size:44px}.vph-msg{font-family:var(--sans);font-size:13px;color:var(--txt)}.vph-sub{font-size:10px;line-height:2.2}
+.v-tooltip{position:absolute;background:var(--sur);border:1px solid var(--bdr2);border-radius:3px;padding:6px 10px;font-size:10px;pointer-events:none;display:none;z-index:5;max-width:240px}
+.vtt-type{color:var(--blu);font-size:9px}.vtt-nom{color:var(--txth);font-weight:600}.vtt-stat{font-size:9px;font-weight:700}
+.vtt-stat.ok{color:var(--grn)}.vtt-stat.ko{color:var(--red)}.vtt-stat.na{color:var(--txtd)}
+.props-panel{width:290px;flex-shrink:0;border-left:1px solid var(--bdr);background:var(--sur);display:flex;flex-direction:column;overflow:hidden}
+.pp-hdr{padding:11px 14px;border-bottom:1px solid var(--bdr);flex-shrink:0}
+.pp-title{font-family:var(--sans);font-size:11px;font-weight:600;color:var(--txth)}.pp-sub{font-size:9px;color:var(--txtd);margin-top:2px}
+.pp-body{flex:1;overflow-y:auto;padding:10px 12px}.pp-empty{color:var(--txtd);font-size:10px;text-align:center;margin-top:40px;line-height:2.2}
+.pid-block{background:var(--bg);border:1px solid var(--bdr);border-radius:3px;padding:9px;margin-bottom:9px}
+.pid-row{display:flex;justify-content:space-between;align-items:baseline;padding:3px 0;border-bottom:1px solid var(--bdr)}.pid-row:last-child{border-bottom:none}
+.pid-k{font-size:9px;color:var(--txtd);letter-spacing:.1em;text-transform:uppercase;flex-shrink:0}
+.pid-v{font-size:10px;color:var(--txth);font-weight:600;text-align:right;max-width:65%;word-break:break-all}
+.pid-v.guid{color:var(--acc);font-size:8px}.pid-v.itype{color:var(--blu)}.pid-v.ok{color:var(--grn)}.pid-v.ko{color:var(--red)}.pid-v.etage{color:var(--pur)}
+.cl-item{display:flex;gap:8px;align-items:flex-start;padding:6px 8px;background:var(--accd);border:1px solid var(--acc);border-radius:3px;margin-bottom:4px}
+.cl-sys{font-size:9px;color:var(--acc);font-weight:600}.cl-code{font-size:11px;font-weight:700;color:var(--txth)}.cl-desc{font-size:9px;color:var(--txtd)}
+.mat-tag{display:inline-block;padding:2px 6px;background:var(--blud);border:1px solid var(--blu);border-radius:2px;color:var(--blu);font-size:9px;margin:2px}
+.pset-block{margin-bottom:6px;border:1px solid var(--bdr);border-radius:3px;overflow:hidden}
+.pset-hdr{padding:5px 9px;background:var(--bdr);font-family:var(--sans);font-size:10px;font-weight:600;color:var(--txt);cursor:pointer;display:flex;justify-content:space-between;align-items:center;transition:background .15s}
+.pset-hdr:hover{background:var(--bdr2)}.pset-chev{font-size:9px;transition:transform .15s;color:var(--txtd)}.pset-block.open .pset-chev{transform:rotate(90deg)}
+.pset-props{display:none}.pset-block.open .pset-props{display:block}
+.pset-row{display:flex;justify-content:space-between;align-items:baseline;padding:4px 9px;border-bottom:1px solid var(--bdr)}.pset-row:last-child{border-bottom:none}.pset-row:nth-child(even){background:#ffffff04}
+.pk{font-size:9px;color:var(--txtd);flex:1;padding-right:8px}.pv{font-size:10px;color:var(--txth);text-align:right;max-width:60%;word-break:break-word}
+.pv.bt{color:var(--grn)}.pv.bf{color:var(--red)}.pv.num{color:var(--pur)}
+
+/* DASHBOARD */
+.dash-wrap{padding:20px;flex:1;display:flex;flex-direction:column;gap:16px;overflow-y:auto}
+.dash-header{display:grid;grid-template-columns:160px 1fr 1fr;gap:14px;flex-shrink:0}
+.gauge-card{background:var(--sur);border:1px solid var(--bdr);border-radius:4px;padding:14px;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.gauge-label-top{font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--txtd);margin-bottom:8px}
+.gauge-svg-wrap{position:relative;width:110px;height:60px;overflow:hidden}.gauge-svg-wrap svg{width:110px;height:110px}
+.gauge-pct-wrap{text-align:center;margin-top:6px}.gauge-pct{font-family:var(--sans);font-size:34px;font-weight:800;line-height:1}.gauge-sub{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--txtd)}
+.mini-chart-card{background:var(--sur);border:1px solid var(--bdr);border-radius:4px;padding:14px;display:flex;flex-direction:column}
+.mcc-title{font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--txtd);margin-bottom:10px}.mcc-canvas{flex:1;min-height:0;max-height:120px}
+.tbl-card{background:var(--sur);border:1px solid var(--bdr);border-radius:4px;overflow:hidden;flex:1;display:flex;flex-direction:column;min-height:0}
+.tbl-header{padding:12px 14px;border-bottom:1px solid var(--bdr);flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.tbl-title-row{display:flex;align-items:center;gap:10px}.tbl-title{font-family:var(--sans);font-size:11px;font-weight:600;color:var(--txth)}.tbl-count{font-size:10px;color:var(--txtd)}
+.tbl-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.tsearch{background:var(--bg);border:1px solid var(--bdr2);border-radius:3px;padding:5px 10px;color:var(--txth);font-family:var(--mono);font-size:11px;width:200px}.tsearch::placeholder{color:var(--txtd)}.tsearch:focus{outline:none;border-color:var(--blu)}
+.tsel{background:var(--bg);border:1px solid var(--bdr2);border-radius:3px;padding:5px 8px;color:var(--txt);font-family:var(--mono);font-size:10px;cursor:pointer}.tsel:focus{outline:none}
+.pill-row{display:flex;gap:6px}
+.pill{padding:3px 10px;border-radius:20px;font-size:9px;font-weight:600;cursor:pointer;border:1px solid;transition:all .15s;white-space:nowrap}
+.pill.all{border-color:var(--bdr2);color:var(--txtd)}.pill.all.on{background:var(--bdr2);color:var(--txth)}
+.pill.ok{border-color:var(--grn);color:var(--grn)}.pill.ok.on{background:var(--grn);color:#000}
+.pill.ko{border-color:var(--red);color:var(--red)}.pill.ko.on{background:var(--red);color:#fff}
+.tbl-scroll{overflow:auto;flex:1;min-height:0}
+table{width:100%;border-collapse:collapse;min-width:900px}
+thead th{position:sticky;top:0;background:var(--bdr2);padding:8px 10px;text-align:left;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--txtd);white-space:nowrap;cursor:pointer;user-select:none;border-bottom:1px solid var(--bdr)}
+thead th:hover{color:var(--txth)}.si{margin-left:3px;opacity:.4}.sorted{color:var(--blu)!important}.sorted .si{opacity:1}
+tbody td{padding:7px 10px;border-bottom:1px solid var(--bdr);font-size:10px;white-space:nowrap;max-width:200px;overflow:hidden;text-overflow:ellipsis}
+tbody tr{cursor:pointer;transition:background .1s}.tbody tr:hover td,.tbody tr:hover td{background:#ffffff06}
+.c-id{color:var(--txtd);font-size:9px}.c-guid{color:var(--acc);font-size:9px}.c-type{color:var(--blu)}.c-etage{color:var(--pur);font-size:9px}.c-cl{color:var(--acc)}.c-spec{font-size:9px;font-style:italic;color:var(--txtd)}
+.stat-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 7px;border-radius:2px;font-size:9px;font-weight:700}
+.stat-badge.ok{background:var(--grnd);color:var(--grn);border:1px solid var(--grn)}.stat-badge.ko{background:var(--redd);color:var(--red);border:1px solid var(--red)}
+.tbl-foot{padding:8px 14px;border-top:1px solid var(--bdr);font-size:9px;color:var(--txtd);flex-shrink:0;display:flex;align-items:center;justify-content:space-between}
+
+::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-track{background:var(--sur)}::-webkit-scrollbar-thumb{background:var(--bdr2);border-radius:2px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner{display:inline-block;width:11px;height:11px;border:2px solid #0004;border-top-color:#000;border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:6px}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}.pulse{animation:pulse 1.5s ease infinite}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="topbar">
+  <span class="logo-tag">BIM</span><span class="logo">IDS <span>Validator</span></span>
+  <div class="srv"><div class="sdot" id="sdot"></div><span id="slbl">Connexion…</span></div>
+</div>
+<div class="tabnav">
+  <button class="tbtn active" data-tab="upload">① Upload &amp; Validation</button>
+  <button class="tbtn" data-tab="viewer">② 3D Viewer</button>
+  <button class="tbtn" data-tab="dashboard">③ Dashboard</button>
+</div>
+<div class="panels">
+
+<!-- UPLOAD -->
+<div class="panel active" id="tab-upload">
+<div class="upload-wrap">
+  <div class="sec-title" style="margin-bottom:14px">Fichiers source</div>
+  <div class="drop-grid">
+    <div class="dzone" id="zIfc"><input type="file" id="iIfc" accept=".ifc"/>
+      <span class="dzone-icon">🏗️</span><div class="dzone-lbl">Fichier IFC</div>
+      <div class="dzone-hint">Glisser ou cliquer — .ifc</div><div class="dzone-name" id="nIfc"></div>
+    </div>
+    <div class="dzone" id="zIds"><input type="file" id="iIds" accept=".ids,.xml"/>
+      <span class="dzone-icon">📋</span><div class="dzone-lbl">Fichier IDS</div>
+      <div class="dzone-hint">Glisser ou cliquer — .ids / .xml</div><div class="dzone-name" id="nIds"></div>
+    </div>
+  </div>
+  <button class="btn-run" id="btnRun" disabled>Sélectionner les deux fichiers</button>
+  <div class="err-box" id="errBox"></div>
+  <div class="bilan-row" id="bilanRow" style="display:none">
+    <div class="bcard c-blu"><div class="v" id="bEl">—</div><div class="l">Éléments IFC</div></div>
+    <div class="bcard c-acc"><div class="v" id="bSp">—</div><div class="l">Exigences IDS</div></div>
+    <div class="bcard c-grn"><div class="v" id="bOk">—</div><div class="l">Conformes</div></div>
+    <div class="bcard c-red"><div class="v" id="bKo">—</div><div class="l">Non conformes</div></div>
+    <div class="bcard c-pur"><div class="v" id="bPct">—</div><div class="l">Conformité</div></div>
+  </div>
+  <div id="specsWrap" style="display:none">
+    <div class="sec-title">Résultats par exigence</div>
+    <div id="specsList"></div>
+    <div class="xbar">
+      <button class="xbtn" id="btnJson">⬇ JSON</button>
+      <button class="xbtn" id="btnCsv">⬇ CSV</button>
+      <button class="xbtn" id="btnGo3d">→ 3D Viewer</button>
+      <button class="xbtn" id="btnGoDash">→ Dashboard</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- 3D VIEWER -->
+<div class="panel" id="tab-viewer">
+<div class="viewer-wrap">
+  <div class="vtb">
+    <button class="vtbtn" id="tb-home" title="Vue accueil">⌂</button>
+    <div class="vtb-sep"></div>
+    <button class="vtbtn active" id="tb-all"  title="Tous">◉</button>
+    <button class="vtbtn"        id="tb-ok"   title="Conformes">✓</button>
+    <button class="vtbtn"        id="tb-ko"   title="Non conformes">✗</button>
+    <div class="vtb-sep"></div>
+    <button class="vtbtn"        id="tb-wire" title="Filaire">⬡</button>
+    <button class="vtbtn"        id="tb-iso"  title="Isoler sélection">⊕</button>
+  </div>
+  <div class="canvas-zone" id="canvasZone">
+    <canvas id="viewerCanvas"></canvas>
+    <div class="v-loading hidden" id="vLoading">
+      <div class="v-load-title pulse">Chargement du modèle 3D…</div>
+      <div class="v-progress-bar"><div class="v-progress-fill" id="vProgressFill"></div></div>
+      <div class="v-load-sub" id="vLoadSub">Initialisation…</div>
+      <div class="v-log" id="vLog"></div>
+    </div>
+    <div class="vph" id="vph">
+      <div class="vph-big">🏛️</div>
+      <div class="vph-msg">Aucun modèle chargé</div>
+      <div class="vph-sub">Validez un fichier IFC dans l'onglet Upload<br/>puis cliquez sur "→ 3D Viewer"</div>
+    </div>
+    <div class="v-tooltip" id="vTooltip">
+      <div class="vtt-type" id="vttType"></div>
+      <div class="vtt-nom"  id="vttNom"></div>
+      <div class="vtt-stat" id="vttStat"></div>
+    </div>
+    <div class="v-overlay" id="vOverlay" style="display:none">
+      <div class="filter-pills">
+        <span class="fpill all on" data-f="all">Tous</span>
+        <span class="fpill ok"     data-f="ok">✓ Conformes</span>
+        <span class="fpill ko"     data-f="ko">✗ Non conformes</span>
+      </div>
+    </div>
+  </div>
+  <div class="props-panel">
+    <div class="pp-hdr">
+      <div class="pp-title">Propriétés</div>
+      <div class="pp-sub" id="ppSub">Cliquer un élément</div>
+    </div>
+    <div class="pp-body" id="ppBody">
+      <div class="pp-empty">🖱️ Cliquer un élément<br/>dans la vue 3D<br/>pour voir ses propriétés</div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- DASHBOARD -->
+<div class="panel" id="tab-dashboard">
+<div class="dash-wrap">
+  <div class="dash-header">
+    <div class="gauge-card">
+      <div class="gauge-label-top">Conformité globale</div>
+      <div class="gauge-svg-wrap"><svg viewBox="0 0 110 110">
+        <path d="M12,98 A55,55 0 0,1 98,98" fill="none" stroke="#1c2128" stroke-width="10" stroke-linecap="round"/>
+        <path id="gaugeArc" d="M12,98 A55,55 0 0,1 98,98" fill="none" stroke="#00e5a0" stroke-width="10" stroke-linecap="round" stroke-dasharray="173" stroke-dashoffset="173" style="transition:stroke-dashoffset 1s ease"/>
+      </svg></div>
+      <div class="gauge-pct-wrap"><div class="gauge-pct" id="gaugePct" style="color:var(--grn)">—</div><div class="gauge-sub">de conformité</div></div>
+    </div>
+    <div class="mini-chart-card"><div class="mcc-title">Conformes vs Non conformes</div><canvas id="chartPie" class="mcc-canvas"></canvas></div>
+    <div class="mini-chart-card"><div class="mcc-title">Résultats par type IFC</div><canvas id="chartBar" class="mcc-canvas"></canvas></div>
+  </div>
+  <div class="tbl-card">
+    <div class="tbl-header">
+      <div class="tbl-title-row"><span class="tbl-title">Tableau récapitulatif</span><span class="tbl-count" id="tblCount"></span></div>
+      <div class="tbl-controls">
+        <div class="pill-row">
+          <span class="pill all on" data-f="all">Tous</span>
+          <span class="pill ok"     data-f="ok">✓ Conformes</span>
+          <span class="pill ko"     data-f="ko">✗ Non conformes</span>
+        </div>
+        <input class="tsearch" id="tSearch" placeholder="Rechercher…"/>
+        <select class="tsel" id="tType"><option value="">Tous les types</option></select>
+        <select class="tsel" id="tSpec"><option value="">Toutes les exigences</option></select>
+        <button class="xbtn" id="btnTblCsv">⬇ CSV</button>
+      </div>
+    </div>
+    <div class="tbl-scroll">
+      <table><thead><tr>
+        <th data-col="id">ID <span class="si">↕</span></th>
+        <th data-col="guid">GUID <span class="si">↕</span></th>
+        <th data-col="type">Type IFC <span class="si">↕</span></th>
+        <th data-col="nom">Nom <span class="si">↕</span></th>
+        <th data-col="etage">Étage <span class="si">↕</span></th>
+        <th data-col="spec">Exigence IDS <span class="si">↕</span></th>
+        <th data-col="classif">Classification <span class="si">↕</span></th>
+        <th data-col="mat">Matériaux <span class="si">↕</span></th>
+        <th data-col="conforme">Statut <span class="si">↕</span></th>
+      </tr></thead>
+      <tbody id="tblBody"><tr><td colspan="9" style="text-align:center;color:var(--txtd);padding:40px">
+        Validez un fichier IFC pour afficher les données
+      </td></tr></tbody></table>
+    </div>
+    <div class="tbl-foot"><span id="tblFoot">—</span>
+      <div style="display:flex;gap:10px"><span id="tblOkCount" style="color:var(--grn)"></span><span id="tblKoCount" style="color:var(--red)"></span></div>
+    </div>
+  </div>
+</div>
+</div>
+
+</div><!-- /panels -->
+</div><!-- /app -->
+
+<!-- ══════════════════════════════════════════
+     MODULE PRINCIPAL (type=module pour import web-ifc)
+══════════════════════════════════════════ -->
+<script type="module">
+// ── web-ifc chargé comme ES module depuis Flask ───────────
+// Le fichier web-ifc-api.js est sauvegardé sous web-ifc-api-iife.js dans le cache
+const WEBIFC_URL = "http://localhost:5000/web-ifc/";
+const API        = "http://localhost:5000";
+
+let WebIFC_module = null;  // sera rempli après import()
+
+// ── Importer web-ifc dynamiquement ────────────────────────
+async function loadWebIFC() {
+  const url = `${WEBIFC_URL}web-ifc-api-iife.js`;
+  log3d(`→ import("${url}")`);
+  try {
+    WebIFC_module = await import(url);
+    log3d("✓ Module web-ifc importé");
+    // L'export principal peut être IfcAPI, WebIFC, ou default
+    return WebIFC_module;
+  } catch(e) {
+    throw new Error(`import() échoué : ${e.message}`);
+  }
+}
+
+function getIfcAPI(mod) {
+  // Chercher IfcAPI dans les exports du module
+  if (mod.IfcAPI)         return mod.IfcAPI;
+  if (mod.WebIFC?.IfcAPI) return mod.WebIFC.IfcAPI;
+  if (mod.default?.IfcAPI)return mod.default.IfcAPI;
+  // Lister les exports pour debug
+  log3d("Exports trouvés : " + Object.keys(mod).join(", "));
+  throw new Error("IfcAPI introuvable dans le module. Voir log ci-dessus.");
+}
+
+// ════════════════════════════════════════
+//  ÉTAT GLOBAL
+// ════════════════════════════════════════
+let fileIfc=null, fileIds=null, lastData=null;
+let tableRows=[], sortCol="id", sortAsc=true, activeFilter="all";
+let chartPie=null, chartBar=null;
+let viewerReady=false, viewFilter="all", wireMode=false, selectedId=null;
+let scene, camera, renderer, meshMap={};
+let passedSet=new Set(), failedSet=new Set();
+const COL_PASS=new THREE.Color(0x00e5a0), COL_FAIL=new THREE.Color(0xff3d5a),
+      COL_GREY=new THREE.Color(0x3a4450), COL_SEL=new THREE.Color(0xf0b429);
+
+// ── Tabs ──────────────────────────────────
+document.querySelectorAll(".tbtn").forEach(b=>b.addEventListener("click",()=>goTab(b.dataset.tab)));
+function goTab(id){
+  document.querySelectorAll(".tbtn").forEach(x=>x.classList.toggle("active",x.dataset.tab===id));
+  document.querySelectorAll(".panel").forEach(x=>x.classList.toggle("active",x.id==="tab-"+id));
+  if(id==="dashboard"&&lastData) renderDashboard(lastData);
+  if(id==="viewer"&&lastData&&!viewerReady) initViewer();
+}
+
+// ── Ping ──────────────────────────────────
+const sdot=document.getElementById("sdot"),slbl=document.getElementById("slbl");
+async function ping(){
+  try{await fetch(`${API}/ping`,{signal:AbortSignal.timeout(3000)});sdot.className="sdot ok";slbl.textContent="Serveur connecté";}
+  catch{sdot.className="sdot err";slbl.textContent="Serveur hors ligne";}
+}
+ping(); setInterval(ping,10000);
+
+// ── Upload ────────────────────────────────
+function setupDrop(zId,iId,nId,cb){
+  const z=document.getElementById(zId),i=document.getElementById(iId),n=document.getElementById(nId);
+  i.addEventListener("change",()=>{if(i.files[0])cb(i.files[0],z,n);});
+  z.addEventListener("dragover",e=>{e.preventDefault();z.classList.add("drag");});
+  z.addEventListener("dragleave",()=>z.classList.remove("drag"));
+  z.addEventListener("drop",e=>{e.preventDefault();z.classList.remove("drag");if(e.dataTransfer.files[0])cb(e.dataTransfer.files[0],z,n);});
+}
+setupDrop("zIfc","iIfc","nIfc",(f,z,n)=>{fileIfc=f;n.textContent=f.name;z.classList.add("loaded");chkBtn();});
+setupDrop("zIds","iIds","nIds",(f,z,n)=>{fileIds=f;n.textContent=f.name;z.classList.add("loaded");chkBtn();});
+const btnRun=document.getElementById("btnRun");
+function chkBtn(){if(fileIfc&&fileIds){btnRun.disabled=false;btnRun.textContent="▶ Lancer la validation";}}
+
+btnRun.addEventListener("click",async()=>{
+  if(!fileIfc||!fileIds)return;
+  btnRun.disabled=true;btnRun.classList.add("loading");
+  btnRun.innerHTML='<span class="spinner"></span>Validation en cours…';
+  document.getElementById("errBox").style.display="none";
+  document.getElementById("bilanRow").style.display="none";
+  document.getElementById("specsWrap").style.display="none";
+  viewerReady=false; meshMap={};
+  try{
+    const form=new FormData();form.append("ifc",fileIfc);form.append("ids",fileIds);
+    const r=await fetch(`${API}/valider`,{method:"POST",body:form});
+    if(!r.ok){const e=await r.json();throw new Error(e.erreur||`HTTP ${r.status}`);}
+    lastData=await r.json(); showResults(lastData);
+  }catch(e){const b=document.getElementById("errBox");b.style.display="block";b.textContent="❌ "+e.message;}
+  finally{btnRun.disabled=false;btnRun.classList.remove("loading");btnRun.textContent="▶ Relancer la validation";}
+});
+
+function showResults(d){
+  const tp=d.bilan.total_passed,tf=d.bilan.total_failed,tot=tp+tf,pct=tot>0?Math.round(tp/tot*100):0;
+  ["bEl","bSp","bOk","bKo","bPct"].forEach((id,i)=>document.getElementById(id).textContent=
+    [d.modele.elements,d.specifications.length,tp,tf,pct+"%"][i]);
+  document.getElementById("bilanRow").style.display="grid";
+  const list=document.getElementById("specsList");list.innerHTML="";
+  d.specifications.forEach(sp=>list.appendChild(buildSpecBlock(sp)));
+  document.getElementById("specsWrap").style.display="block";
+  buildTableRows(d);buildFilters(d);
+  document.getElementById("btnGo3d").onclick=()=>{goTab("viewer");if(!viewerReady)initViewer();};
+  document.getElementById("btnGoDash").onclick=()=>goTab("dashboard");
+}
+
+function buildSpecBlock(sp){
+  const isPass=sp.status==="PASS",pct=sp.applicable>0?Math.round(sp.passed/sp.applicable*100):100;
+  const bar=!isPass&&sp.passed===0?"#ff3d5a":isPass?"#00e5a0":`linear-gradient(90deg,#00e5a0 ${pct}%,#ff3d5a ${pct}%)`;
+  const mkI=(els,cls)=>els.slice(0,8).map(el=>`<div class="el-item ${cls}" onclick='showProps(${JSON.stringify(el).replace(/'/g,"&#39;")})'>
+    <span class="el-id">#${el.id}</span><span class="el-type">${el.type}</span>
+    <span class="el-nom">${esc(el.nom)}</span></div>`).join("")+(els.length>8?`<div class="more">…+${els.length-8}</div>`:"");
+  let det="";
+  if(sp.passed_elements.length)det+=`<div class="dsec"><div class="dsec-title ok">✓ (${sp.passed})</div><div class="el-list">${mkI(sp.passed_elements,'ok')}</div></div>`;
+  if(sp.failed_elements.length)det+=`<div class="dsec"><div class="dsec-title ko">✗ (${sp.failed})</div><div class="el-list">${mkI(sp.failed_elements,'ko')}</div></div>`;
+  const b=document.createElement("div");b.className="spec-block";
+  b.innerHTML=`<div class="spec-hdr" onclick="this.closest('.spec-block').classList.toggle('open')">
+    <span class="sbadge ${isPass?'pass':'fail'}">${sp.status}</span>
+    <span class="sname">${esc(sp.name)}</span>
+    <span class="scnt"><span class="ok">✓${sp.passed}</span>&nbsp;<span class="ko">✗${sp.failed}</span>&nbsp;/&nbsp;${sp.applicable}</span>
+    <span class="schev">›</span></div>
+    <div class="pbar"><div class="pbar-fill" style="width:${pct}%;background:${bar}"></div></div>
+    <div class="sdetail">${det||'<div class="dsec" style="color:var(--txtd)">Aucun élément</div>'}</div>`;
+  return b;
+}
+
+// ════════════════════════════════════════
+//  3D VIEWER
+// ════════════════════════════════════════
+function log3d(msg){const el=document.getElementById("vLog");if(el){el.innerHTML+=msg+"<br/>";el.scrollTop=el.scrollHeight;}}
+function setProgress(pct,msg){document.getElementById("vProgressFill").style.width=pct+"%";document.getElementById("vLoadSub").textContent=msg;}
+
+async function initViewer(){
+  if(viewerReady||!lastData)return;
+  const ph=document.getElementById("vph"),loading=document.getElementById("vLoading");
+  ph.style.display="none";loading.classList.remove("hidden");
+
+  try{
+    // 1. Import web-ifc
+    setProgress(5,"Import module web-ifc...");
+    const mod = await loadWebIFC();
+    const IfcAPI = getIfcAPI(mod);
+    log3d("IfcAPI OK");
+    setProgress(20,"Init WASM...");
+
+    const ifcApi = new IfcAPI();
+    ifcApi.SetWasmPath(WEBIFC_URL);
+    await ifcApi.Init();
+    log3d("WASM init OK");
+    setProgress(38,"WASM pret");
+
+    // 2. Fichier IFC
+    setProgress(42,"Telechargement IFC...");
+    const resp=await fetch(`${API}/ifc`);
+    if(!resp.ok) throw new Error(`/ifc HTTP ${resp.status}`);
+    const buf=await resp.arrayBuffer();
+    log3d("IFC recu : "+(buf.byteLength/1024).toFixed(0)+" ko");
+    setProgress(55,"Parsing...");
+
+    const modelID=ifcApi.OpenModel(new Uint8Array(buf),{COORDINATE_TO_ORIGIN:false,USE_FAST_BOOLS:false});
+    log3d("Modele ouvert, ID="+modelID);
+    setProgress(65,"Three.js...");
+
+    // 3. Three.js
+    initThree();
+    passedSet=new Set(lastData.ids_3d.passed);
+    failedSet=new Set(lastData.ids_3d.failed);
+
+    // 4. Géométrie — on itère sur tous les types IFC connus
+    setProgress(70,"Extraction geometrie...");
+
+    // Types IFC courants qui ont de la géométrie
+    const IFC_TYPES_GEO = [
+      "IFCWALL","IFCWALLSTANDARDCASE","IFCSLAB","IFCROOF","IFCCOLUMN","IFCBEAM",
+      "IFCDOOR","IFCWINDOW","IFCSTAIR","IFCSTAIRFLIGHT","IFCRAILING","IFCFURNISHINGELEMENT",
+      "IFCFURNITURE","IFCFOOTING","IFCCOVERING","IFCPLATE","IFCMEMBER","IFCSPACE",
+      "IFCBUILDINGSTOREY","IFCBUILDING","IFCSITE","IFCFLOWSEGMENT","IFCFLOWTERMINAL",
+      "IFCPIPEsegment","IFCDUCTFITTING","IFCAIRTERMINALELEMENT","IFCOPENINGELEMENT",
+      "IFCPROXY","IFCGEOGRAPHICELEMENT","IFCBRIDGEPART","IFCBRIDGE"
+    ];
+
+    let nMesh=0, nEl=0;
+
+    for(const typeName of IFC_TYPES_GEO){
+      let typeID;
+      try{ typeID = ifcApi.GetTypeCode(typeName); }
+      catch{ continue; }
+
+      let ids;
+      try{ ids = ifcApi.GetAllTypesOfModel(modelID, typeID); }
+      catch{ continue; }
+      if(!ids || ids.length===0) continue;
+
+      log3d(typeName+": "+ids.length+" elements");
+
+      for(const eid of ids){
+        try{
+          const meshData = ifcApi.GetFlatMesh(modelID, eid);
+          if(!meshData) continue;
+          const geoms = meshData.geometries;
+          if(!geoms || geoms.size()===0) continue;
+
+          const group=new THREE.Group();
+          group.userData.expressID=eid;
+          let hasGeom=false;
+
+          for(let i=0;i<geoms.size();i++){
+            const pg=geoms.get(i);
+            const gd=ifcApi.GetGeometry(modelID, pg.geometryExpressID);
+            if(!gd) continue;
+
+            const vData=gd.GetVertexData(), vSize=gd.GetVertexDataSize();
+            const iData=gd.GetIndexData(),  iSize=gd.GetIndexDataSize();
+            if(vSize===0||iSize===0) continue;
+
+            const vArr=ifcApi.GetVertexArray(vData, vSize);
+            const iArr=ifcApi.GetIndexArray(iData, iSize);
+            if(!vArr||vArr.length===0) continue;
+
+            const geo=new THREE.BufferGeometry();
+            const pos=[],nrm=[];
+            for(let j=0;j<vArr.length;j+=6){
+              pos.push(vArr[j],vArr[j+1],vArr[j+2]);
+              nrm.push(vArr[j+3],vArr[j+4],vArr[j+5]);
+            }
+            geo.setAttribute("position",new THREE.Float32BufferAttribute(pos,3));
+            geo.setAttribute("normal",new THREE.Float32BufferAttribute(nrm,3));
+            geo.setIndex(new THREE.Uint32BufferAttribute(iArr,1));
+            geo.applyMatrix4(new THREE.Matrix4().fromArray(pg.flatTransformation));
+
+            const msh=new THREE.Mesh(geo, new THREE.MeshPhongMaterial({
+              color:getCol(eid), transparent:true, opacity:0.88, side:THREE.DoubleSide
+            }));
+            msh.userData.expressID=eid;
+            group.add(msh);
+            hasGeom=true;
+            nMesh++;
+          }
+
+          if(hasGeom){
+            scene.add(group);
+            meshMap[eid]=group;
+            nEl++;
+          }
+
+        }catch(e2){ /* element sans géo, on ignore */ }
+      }
+    }
+
+    log3d("Total : "+nMesh+" mesh, "+nEl+" elements");
+
+    if(nEl===0){
+      // Dernier recours : essayer GetFlatMesh sur tous les IDs connus
+      log3d("Tentative GetFlatMesh brute sur tous les IDs...");
+      const allEids = lastData.tous_elements.map(e=>e.id);
+      for(const eid of allEids){
+        try{
+          const meshData=ifcApi.GetFlatMesh(modelID,eid);
+          if(!meshData) continue;
+          const geoms=meshData.geometries;
+          if(!geoms||geoms.size()===0) continue;
+          const group=new THREE.Group(); group.userData.expressID=eid;
+          let ok=false;
+          for(let i=0;i<geoms.size();i++){
+            const pg=geoms.get(i),gd=ifcApi.GetGeometry(modelID,pg.geometryExpressID);
+            if(!gd) continue;
+            const vArr=ifcApi.GetVertexArray(gd.GetVertexData(),gd.GetVertexDataSize());
+            const iArr=ifcApi.GetIndexArray(gd.GetIndexData(),gd.GetIndexDataSize());
+            if(!vArr||vArr.length===0) continue;
+            const geo=new THREE.BufferGeometry();
+            const pos=[],nrm=[];
+            for(let j=0;j<vArr.length;j+=6){pos.push(vArr[j],vArr[j+1],vArr[j+2]);nrm.push(vArr[j+3],vArr[j+4],vArr[j+5]);}
+            geo.setAttribute("position",new THREE.Float32BufferAttribute(pos,3));
+            geo.setAttribute("normal",new THREE.Float32BufferAttribute(nrm,3));
+            geo.setIndex(new THREE.Uint32BufferAttribute(iArr,1));
+            geo.applyMatrix4(new THREE.Matrix4().fromArray(pg.flatTransformation));
+            const msh=new THREE.Mesh(geo,new THREE.MeshPhongMaterial({color:getCol(eid),transparent:true,opacity:0.88,side:THREE.DoubleSide}));
+            msh.userData.expressID=eid; group.add(msh); ok=true; nMesh++;
+          }
+          if(ok){scene.add(group);meshMap[eid]=group;nEl++;}
+        }catch(e3){}
+      }
+      log3d("Apres brute force : "+nEl+" elements");
+    }
+
+    if(nEl===0) throw new Error("Aucune geometrie extraite. Voir console F12 pour details.");
+
+    setProgress(90,"Centrage...");
+    fitCam();
+    ifcApi.CloseModel(modelID);
+    setProgress(100,"Modele 3D pret");
+    setTimeout(()=>{loading.classList.add("hidden");document.getElementById("vOverlay").style.display="block";viewerReady=true;},500);
+
+  }catch(err){
+    loading.classList.add("hidden");ph.style.display="flex";
+    ph.innerHTML=`<div class="vph-big">⚠️</div><div class="vph-msg" style="color:var(--red)">Erreur 3D</div>
+      <div class="vph-sub" style="color:var(--red);margin-top:6px">${esc(err.message)}</div>
+      <div class="vph-sub" style="margin-top:10px">Ouvrir F12 → Console pour details</div>`;
+    console.error("Erreur viewer 3D:",err);
+  }
+}
+
+function getCol(eid){return passedSet.has(eid)?COL_PASS:failedSet.has(eid)?COL_FAIL:COL_GREY;}
+
+// ── Three.js init ─────────────────────────
+function initThree(){
+  const zone=document.getElementById("canvasZone"),canvas=document.getElementById("viewerCanvas");
+  const W=zone.clientWidth,H=zone.clientHeight;
+  scene=new THREE.Scene();scene.background=new THREE.Color(0x060810);
+  camera=new THREE.PerspectiveCamera(45,W/H,0.01,100000);
+  renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+  renderer.setSize(W,H);renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  scene.add(new THREE.AmbientLight(0xffffff,.55));
+  const d=new THREE.DirectionalLight(0xffffff,.9);d.position.set(1,2,1);scene.add(d);
+  const d2=new THREE.DirectionalLight(0x8899ff,.35);d2.position.set(-1,-1,-1);scene.add(d2);
+  setupOrbit(canvas,zone);setupRay(canvas,zone);
+  new ResizeObserver(()=>{const W2=zone.clientWidth,H2=zone.clientHeight;camera.aspect=W2/H2;camera.updateProjectionMatrix();renderer.setSize(W2,H2);}).observe(zone);
+  (function loop(){requestAnimationFrame(loop);renderer.render(scene,camera);})();
+}
+
+// ── Orbit ─────────────────────────────────
+let oSph={theta:-.5,phi:1.2,r:100},oTgt=new THREE.Vector3(),oDn=false,oPX=0,oPY=0,oBtn=0;
+function updOrbit(){
+  camera.position.set(oTgt.x+oSph.r*Math.sin(oSph.phi)*Math.sin(oSph.theta),oTgt.y+oSph.r*Math.cos(oSph.phi),oTgt.z+oSph.r*Math.sin(oSph.phi)*Math.cos(oSph.theta));
+  camera.lookAt(oTgt);
+}
+updOrbit();
+function setupOrbit(canvas,zone){
+  canvas.addEventListener("mousedown",e=>{oDn=true;oPX=e.clientX;oPY=e.clientY;oBtn=e.button;});
+  window.addEventListener("mouseup",()=>oDn=false);
+  canvas.addEventListener("mousemove",e=>{
+    if(!oDn)return;
+    const dx=e.clientX-oPX,dy=e.clientY-oPY;oPX=e.clientX;oPY=e.clientY;
+    if(oBtn===0){oSph.theta-=dx*.005;oSph.phi=Math.max(.05,Math.min(Math.PI-.05,oSph.phi+dy*.005));}
+    else if(oBtn===2){
+      const r=new THREE.Vector3().crossVectors(camera.getWorldDirection(new THREE.Vector3()),new THREE.Vector3(0,1,0)).normalize();
+      const s=oSph.r*.001;oTgt.addScaledVector(r,-dx*s);oTgt.addScaledVector(new THREE.Vector3(0,1,0),dy*s);
+    }
+    updOrbit();
+  });
+  canvas.addEventListener("wheel",e=>{e.preventDefault();oSph.r=Math.max(.1,oSph.r*(1+e.deltaY*.001));updOrbit();},{passive:false});
+  canvas.addEventListener("contextmenu",e=>e.preventDefault());
+}
+function fitCam(){
+  // Calculer la bbox AVANT tout deplacement
+  const box=new THREE.Box3();
+  scene.traverse(o=>{if(o.isMesh)box.expandByObject(o);});
+  if(box.isEmpty()){log3d("BBox vide - aucun mesh");return;}
+  const center=new THREE.Vector3(),size=new THREE.Vector3();
+  box.getCenter(center);box.getSize(size);
+  log3d("BBox center=("+center.x.toFixed(1)+","+center.y.toFixed(1)+","+center.z.toFixed(1)+")"
+    +" size=("+size.x.toFixed(1)+","+size.y.toFixed(1)+","+size.z.toFixed(1)+")");
+  // Recentrer tous les groupes vers l'origine
+  scene.children.forEach(ch=>{if(ch.isGroup)ch.position.sub(center);});
+  // Recalculer la bbox apres recentrage pour confirmer
+  oTgt.set(0,0,0);
+  const maxDim=Math.max(size.x,size.y,size.z);
+  oSph.r=maxDim*2.0; oSph.theta=-0.5; oSph.phi=1.1;
+  updOrbit();
+  log3d("Camera r="+oSph.r.toFixed(1));
+}
+
+// ── Raycaster ─────────────────────────────
+function setupRay(canvas,zone){
+  const ray=new THREE.Raycaster(),m=new THREE.Vector2(),tt=document.getElementById("vTooltip");
+  let hov=null,ckS={x:0,y:0};
+  function allMesh(){const a=[];scene.traverse(o=>{if(o.isMesh&&o.visible)a.push(o);});return a;}
+  function getEl(eid){return lastData?.tous_elements.find(e=>e.id===eid)||null;}
+  canvas.addEventListener("mousemove",e=>{
+    const rc=zone.getBoundingClientRect();
+    m.x=((e.clientX-rc.left)/rc.width)*2-1;m.y=-((e.clientY-rc.top)/rc.height)*2+1;
+    ray.setFromCamera(m,camera);
+    const h=ray.intersectObjects(allMesh());
+    if(h.length){
+      const eid=h[0].object.userData.expressID;
+      if(eid!==hov){
+        hov=eid;const el=getEl(eid);
+        document.getElementById("vttType").textContent=el?el.type:`#${eid}`;
+        document.getElementById("vttNom").textContent=el?el.nom:"";
+        const st=passedSet.has(eid)?"ok":failedSet.has(eid)?"ko":"na";
+        const vs=document.getElementById("vttStat");vs.className="vtt-stat "+st;
+        vs.textContent=st==="ok"?"✓ Conforme":st==="ko"?"✗ Non conforme":"Hors scope";
+      }
+      tt.style.display="block";tt.style.left=(e.clientX-zone.getBoundingClientRect().left+14)+"px";tt.style.top=(e.clientY-zone.getBoundingClientRect().top+14)+"px";
+    }else{hov=null;tt.style.display="none";}
+  });
+  canvas.addEventListener("mousedown",e=>{ckS={x:e.clientX,y:e.clientY};});
+  canvas.addEventListener("mouseup",e=>{
+    if(Math.abs(e.clientX-ckS.x)>5||Math.abs(e.clientY-ckS.y)>5)return;
+    const rc=zone.getBoundingClientRect();
+    m.x=((e.clientX-rc.left)/rc.width)*2-1;m.y=-((e.clientY-rc.top)/rc.height)*2+1;
+    ray.setFromCamera(m,camera);const h=ray.intersectObjects(allMesh());
+    if(h.length)selEl(h[0].object.userData.expressID);
+  });
+}
+
+function selEl(eid){
+  if(selectedId!==null&&meshMap[selectedId])meshMap[selectedId].traverse(m=>{if(m.isMesh)m.material.color.set(getCol(selectedId));});
+  selectedId=eid;
+  if(meshMap[eid])meshMap[eid].traverse(m=>{if(m.isMesh)m.material.color.set(COL_SEL);});
+  const el=lastData?.tous_elements.find(e=>e.id===eid);
+  if(el)showProps(el);
+  else{document.getElementById("ppSub").textContent=`#${eid}`;document.getElementById("ppBody").innerHTML=`<div class="pp-empty">Élément #${eid}<br/>(hors scope IDS)</div>`;}
+}
+
+// ── Filtres 3D ────────────────────────────
+document.querySelectorAll(".fpill").forEach(p=>p.addEventListener("click",()=>{
+  document.querySelectorAll(".fpill").forEach(x=>x.classList.remove("on"));p.classList.add("on");
+  viewFilter=p.dataset.f;applyF3d();
+}));
+function applyF3d(){Object.entries(meshMap).forEach(([eid,g])=>{eid=+eid;g.visible=viewFilter==="all"||viewFilter==="ok"&&passedSet.has(eid)||viewFilter==="ko"&&failedSet.has(eid);});}
+
+document.getElementById("tb-home").addEventListener("click",fitCam);
+["tb-all","tb-ok","tb-ko"].forEach(id=>document.getElementById(id).addEventListener("click",function(){
+  document.querySelectorAll(".vtbtn").forEach(x=>x.classList.remove("active"));this.classList.add("active");
+  viewFilter={"tb-all":"all","tb-ok":"ok","tb-ko":"ko"}[id];
+  document.querySelectorAll(".fpill").forEach(x=>x.classList.toggle("on",x.dataset.f===viewFilter));
+  applyF3d();
+}));
+document.getElementById("tb-wire").addEventListener("click",function(){
+  wireMode=!wireMode;this.classList.toggle("active",wireMode);
+  Object.values(meshMap).forEach(g=>g.traverse(m=>{if(m.isMesh)m.material.wireframe=wireMode;}));
+});
+document.getElementById("tb-iso").addEventListener("click",()=>{
+  if(selectedId===null)return;
+  const anyHid=Object.keys(meshMap).some(k=>+k!==selectedId&&!meshMap[k].visible);
+  if(anyHid){Object.values(meshMap).forEach(g=>g.visible=true);applyF3d();}
+  else Object.entries(meshMap).forEach(([k,g])=>g.visible=+k===selectedId);
+});
+
+// ════════════════════════════════════════
+//  PANNEAU PROPRIÉTÉS
+// ════════════════════════════════════════
+function showProps(el){
+  document.getElementById("ppSub").textContent=`#${el.id} — ${el.type}`;
+  const cTxt=el.conforme===true?"✓ CONFORME":el.conforme===false?"✗ NON CONFORME":"—";
+  const cCls=el.conforme===true?"ok":el.conforme===false?"ko":"";
+  let h=`<div class="pid-block">
+    <div class="pid-row"><span class="pid-k">Express ID</span><span class="pid-v">#${el.id}</span></div>
+    <div class="pid-row"><span class="pid-k">GUID</span><span class="pid-v guid">${el.guid||"—"}</span></div>
+    <div class="pid-row"><span class="pid-k">Type IFC</span><span class="pid-v itype">${el.type}</span></div>
+    <div class="pid-row"><span class="pid-k">Nom</span><span class="pid-v">${esc(el.nom)}</span></div>
+    ${el.etage?`<div class="pid-row"><span class="pid-k">Étage</span><span class="pid-v etage">${esc(el.etage.nom)}</span></div>`:""}
+    <div class="pid-row"><span class="pid-k">Statut IDS</span><span class="pid-v ${cCls}">${cTxt}</span></div>
+  </div>`;
+  if(el.type_objet)h+=`<div style="margin-bottom:8px"><div style="font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--txtd);margin-bottom:4px">Type Revit</div>
+    <div class="pid-block"><div class="pid-row"><span class="pid-k">Nom</span><span class="pid-v">${esc(el.type_objet.nom)}</span></div>
+    <div class="pid-row"><span class="pid-k">GUID</span><span class="pid-v guid">${el.type_objet.guid||"—"}</span></div></div></div>`;
+  if(el.classifications?.length){
+    h+=`<div style="margin-bottom:9px"><div style="font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--acc);margin-bottom:5px">Classifications</div>`;
+    el.classifications.forEach(c=>h+=`<div class="cl-item"><div><div class="cl-sys">${esc(c.systeme)}</div><div class="cl-code">${esc(c.code)}</div>${c.description?`<div class="cl-desc">${esc(c.description)}</div>`:""}</div></div>`);
+    h+=`</div>`;
+  }
+  if(el.materiaux?.length)h+=`<div style="margin-bottom:9px"><div style="font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--blu);margin-bottom:5px">Matériaux</div>${el.materiaux.map(m=>`<span class="mat-tag">${esc(m)}</span>`).join("")}</div>`;
+  if(el.psets&&Object.keys(el.psets).length){
+    h+=`<div><div style="font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--txtd);margin-bottom:5px">Property Sets</div>`;
+    Object.entries(el.psets).forEach(([pn,props])=>{
+      const pid="ps_"+pn.replace(/\W/g,"_");
+      h+=`<div class="pset-block" id="${pid}"><div class="pset-hdr" onclick="document.getElementById('${pid}').classList.toggle('open')">
+        <span>${esc(pn)}</span><span style="color:var(--txtd);font-size:9px">${Object.keys(props).length}&nbsp;<span class="pset-chev">›</span></span>
+      </div><div class="pset-props">`;
+      Object.entries(props).forEach(([k,v])=>{
+        let vc="pv",vd=v===null?`<em style="color:var(--txtd)">null</em>`:esc(String(v));
+        if(v===true){vc+=" bt";vd="true";}if(v===false){vc+=" bf";vd="false";}if(typeof v==="number")vc+=" num";
+        h+=`<div class="pset-row"><span class="pk">${esc(k)}</span><span class="${vc}">${vd}</span></div>`;
+      });
+      h+=`</div></div>`;
+    });
+    h+=`</div>`;
+  }
+  document.getElementById("ppBody").innerHTML=h;
+  const fp=document.querySelector(".pset-block");if(fp)fp.classList.add("open");
+}
+
+// ════════════════════════════════════════
+//  DASHBOARD
+// ════════════════════════════════════════
+function buildTableRows(d){tableRows=[];d.specifications.forEach(sp=>{sp.passed_elements.forEach(el=>tableRows.push({...el,conforme:true,specName:sp.name}));sp.failed_elements.forEach(el=>tableRows.push({...el,conforme:false,specName:sp.name}));});}
+function buildFilters(d){
+  const types=[...new Set(tableRows.map(r=>r.type))].sort();
+  const sel=document.getElementById("tType");sel.innerHTML='<option value="">Tous les types</option>';types.forEach(t=>sel.innerHTML+=`<option value="${t}">${t.replace("Ifc","")}</option>`);
+  const sp=document.getElementById("tSpec");sp.innerHTML='<option value="">Toutes les exigences</option>';d.specifications.forEach(s=>sp.innerHTML+=`<option value="${esc(s.name)}">${esc(s.name)}</option>`);
+}
+function renderDashboard(d){
+  const tp=d.bilan.total_passed,tf=d.bilan.total_failed,tot=tp+tf,pct=tot>0?Math.round(tp/tot*100):0;
+  document.getElementById("gaugePct").textContent=pct+"%";
+  const arc=document.getElementById("gaugeArc"),col=pct>=80?"#00e5a0":pct>=50?"#f0b429":"#ff3d5a";
+  arc.style.stroke=col;arc.style.strokeDashoffset=173-(173*pct/100);document.getElementById("gaugePct").style.color=col;
+  if(chartPie)chartPie.destroy();
+  chartPie=new Chart(document.getElementById("chartPie"),{type:"doughnut",data:{labels:["Conformes","Non conformes"],datasets:[{data:[tp,tf],backgroundColor:["#00e5a030","#ff3d5a30"],borderColor:["#00e5a0","#ff3d5a"],borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"bottom",labels:{color:"#b8c0cc",font:{family:"JetBrains Mono",size:9},boxWidth:10,padding:8}},tooltip:{callbacks:{label:c=>` ${c.raw}`}}},cutout:"60%"}});
+  const stats=d.stats_par_type,types=Object.keys(stats);
+  if(chartBar)chartBar.destroy();
+  chartBar=new Chart(document.getElementById("chartBar"),{type:"bar",data:{labels:types.map(t=>t.replace("Ifc","")),datasets:[{label:"✓",data:types.map(t=>stats[t].passed),backgroundColor:"#00e5a030",borderColor:"#00e5a0",borderWidth:1},{label:"✗",data:types.map(t=>stats[t].failed),backgroundColor:"#ff3d5a30",borderColor:"#ff3d5a",borderWidth:1}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:"#b8c0cc",font:{family:"JetBrains Mono",size:9},boxWidth:10,padding:6}}},scales:{x:{ticks:{color:"#3d4550",font:{size:9},maxRotation:30},grid:{color:"#1c2128"}},y:{ticks:{color:"#3d4550",font:{size:9}},grid:{color:"#1c2128"},beginAtZero:true}}}});
+  renderTable();
+}
+function renderTable(){
+  const srch=document.getElementById("tSearch").value.toLowerCase(),tp=document.getElementById("tType").value,sp=document.getElementById("tSpec").value;
+  let rows=tableRows.filter(r=>{
+    if(activeFilter==="ok"&&!r.conforme)return false;if(activeFilter==="ko"&&r.conforme)return false;
+    if(tp&&r.type!==tp)return false;if(sp&&r.specName!==sp)return false;
+    if(srch){const h=`${r.id} ${r.guid||""} ${r.nom} ${r.type} ${r.etage?.nom||""} ${r.specName}`.toLowerCase();if(!h.includes(srch))return false;}
+    return true;
+  });
+  rows.sort((a,b)=>{
+    let va,vb;
+    if(sortCol==="id"){va=+a.id;vb=+b.id;}else if(sortCol==="conforme"){va=a.conforme?0:1;vb=b.conforme?0:1;}
+    else if(sortCol==="etage"){va=a.etage?.nom||"";vb=b.etage?.nom||"";}
+    else if(sortCol==="classif"){va=a.classifications?.[0]?.code||"";vb=b.classifications?.[0]?.code||"";}
+    else if(sortCol==="mat"){va=a.materiaux?.[0]||"";vb=b.materiaux?.[0]||"";}
+    else if(sortCol==="spec"){va=a.specName||"";vb=b.specName||"";}
+    else{va=String(a[sortCol]||"");vb=String(b[sortCol]||"");}
+    return sortAsc?(va>vb?1:va<vb?-1:0):(va<vb?1:va>vb?-1:0);
+  });
+  const okN=rows.filter(r=>r.conforme).length,koN=rows.filter(r=>!r.conforme).length;
+  document.getElementById("tblCount").textContent=`${rows.length} lignes`;
+  document.getElementById("tblFoot").textContent=`${rows.length} / ${tableRows.length} éléments`;
+  document.getElementById("tblOkCount").textContent=`✓ ${okN}`;document.getElementById("tblKoCount").textContent=`✗ ${koN}`;
+  const body=document.getElementById("tblBody");
+  if(!rows.length){body.innerHTML=`<tr><td colspan="9" style="text-align:center;color:var(--txtd);padding:30px">Aucun résultat</td></tr>`;return;}
+  body.innerHTML=rows.map(r=>{
+    const cl=r.classifications?.[0],clTxt=cl?`${esc(cl.code)} <span style="color:var(--txtd);font-size:9px">${esc(cl.systeme)}</span>`:`<span style="color:var(--txtd)">—</span>`;
+    const mat=(r.materiaux||[]).slice(0,2).join(", ")||`<span style="color:var(--txtd)">—</span>`;
+    const st=r.conforme?"ok":"ko";
+    return `<tr onclick='selectFromTable(${r.id},${JSON.stringify(r).replace(/'/g,"&#39;")})'>
+      <td class="c-id">#${r.id}</td><td class="c-guid" title="${r.guid||""}">${(r.guid||"—").substring(0,14)}…</td>
+      <td class="c-type">${r.type.replace("Ifc","")}</td><td title="${esc(r.nom)}">${esc(r.nom)}</td>
+      <td class="c-etage">${r.etage?.nom||"—"}</td><td class="c-spec" title="${esc(r.specName)}">${esc(r.specName)}</td>
+      <td class="c-cl">${clTxt}</td><td title="${(r.materiaux||[]).join(', ')}">${mat}</td>
+      <td><span class="stat-badge ${st}">${st==="ok"?"✓ Conforme":"✗ Non conforme"}</span></td>
+    </tr>`;
+  }).join("");
+}
+function selectFromTable(eid,el){showProps(el);if(viewerReady)selEl(eid);goTab("viewer");}
+["tSearch","tType","tSpec"].forEach(id=>document.getElementById(id).addEventListener("input",renderTable));
+document.querySelectorAll(".pill").forEach(p=>p.addEventListener("click",()=>{document.querySelectorAll(".pill").forEach(x=>x.classList.remove("on"));p.classList.add("on");activeFilter=p.dataset.f;renderTable();}));
+document.querySelectorAll("thead th[data-col]").forEach(th=>{
+  th.addEventListener("click",()=>{const col=th.dataset.col;if(sortCol===col)sortAsc=!sortAsc;else{sortCol=col;sortAsc=true;}
+    document.querySelectorAll("thead th[data-col]").forEach(h=>h.classList.remove("sorted"));th.classList.add("sorted");th.querySelector(".si").textContent=sortAsc?"↑":"↓";renderTable();});
+});
+
+// ── Exports ───────────────────────────────
+document.getElementById("btnJson").addEventListener("click",()=>{if(lastData)dl(new Blob([JSON.stringify(lastData,null,2)],{type:"application/json"}),"ids_validation.json");});
+document.getElementById("btnCsv").addEventListener("click",()=>{if(!lastData)return;const r=["Exigence,Statut,Applicables,Conformes,Non-conformes"];lastData.specifications.forEach(sp=>r.push([`"${sp.name}"`,sp.status,sp.applicable,sp.passed,sp.failed].join(",")));dl(new Blob([r.join("\n")],{type:"text/csv"}),"ids_specs.csv");});
+document.getElementById("btnTblCsv").addEventListener("click",()=>{if(!tableRows.length)return;const r=["ID,GUID,Type,Nom,Étage,Exigence IDS,Classification,Matériaux,Statut"];tableRows.forEach(row=>{const cl=row.classifications?.[0];r.push([row.id,row.guid||"",row.type,`"${(row.nom||"").replace(/"/g,'""')}"`,row.etage?.nom||"",`"${(row.specName||"").replace(/"/g,'""')}"`,cl?`${cl.code} (${cl.systeme})`:"",(row.materiaux||[]).join("|"),row.conforme?"Conforme":"Non conforme"].join(","));});dl(new Blob([r.join("\n")],{type:"text/csv"}),"tableau_recap.csv");});
+function dl(b,n){const u=URL.createObjectURL(b);Object.assign(document.createElement("a"),{href:u,download:n}).click();URL.revokeObjectURL(u);}
+function esc(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+
+// ── Exposer selectFromTable globalement ───
+window.selectFromTable = selectFromTable;
+window.showProps = showProps;
+</script>
+</body>
+</html>

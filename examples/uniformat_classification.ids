@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ids:ids xmlns:xs="http://www.w3.org/2001/XMLSchema"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://standards.buildingsmart.org/IDS http://standards.buildingsmart.org/IDS/1.0/ids.xsd"
+         xmlns:ids="http://standards.buildingsmart.org/IDS">
+
+  <ids:info>
+    <ids:title>Exigence Classification Uniformat</ids:title>
+    <ids:version>1.0</ids:version>
+    <ids:description>Tous les éléments physiques du modèle doivent avoir une classification Uniformat. ifctester ne reconnaissant pas les classes abstraites (IfcElement), chaque type concret est ciblé individuellement.</ids:description>
+    <ids:author>formation@ids.com</ids:author>
+    <ids:date>2026-03-07</ids:date>
+    <ids:purpose>Vérification de la classification Uniformat sur tous les éléments</ids:purpose>
+  </ids:info>
+
+  <ids:specifications>
+
+    <!-- ══ SP-01 : Murs ════════════════════════════════════ -->
+    <ids:specification ifcVersion="IFC4X3_ADD2"
+                       name="Uniformat — Murs (IfcWall)"
+                       identifier="SP-01"
+                       description="Chaque mur doit avoir une classification Uniformat."
+                       instructions="Appliquer un Assembly Code Uniformat à chaque mur dans Revit.">
+      <ids:applicability minOccurs="1" maxOccurs="unbounded">
+        <ids:entity>
+          <ids:name><ids:simpleValue>IFCWALL</ids:simpleValue></ids:name>
+        </ids:entity>
+      </ids:applicability>
+      <ids:requirements>
+        <ids:classification cardinality="required" instructions="Code Uniformat requis. Ex: B2010 (mur ext.), C1010 (cloison).">
+          <ids:system><ids:simpleValue>Uniformat</ids:simpleValue></ids:system>
+        </ids:classification>
+      </ids:requirements>
+    </ids:specification>
+
+    <!-- ══ SP-02 : Dalles ══════════════════════════════════ -->
+    <ids:specification ifcVersion="IFC4X3_ADD2"
+                       name="Uniformat — Dalles (IfcSlab)"
+                       identifier="SP-02"
+                       description="Chaque dalle doit avoir une classification Uniformat."
+                       instructions="Appliquer un Assembly Code Uniformat à chaque dalle dans Revit.">
+      <ids:applicability minOccurs="1" maxOccurs="unbounded">
+        <ids:entity>
+          <ids:name><ids:simpleValue>IFCSLAB</ids:simpleValue></ids:name>
+        </ids:entity>
+      </ids:applicability>
+      <ids:requirements>
+        <ids:classification cardinality="required" instructions="Code Uniformat requis. Ex: B1010 (plancher), A1030 (dallage).">
+          <ids:system><ids:simpleValue>Uniformat</ids:simpleValue></ids:system>
+        </ids:classification>
+      </ids:requirements>
+    </ids:specification>
+
+    <!-- ══ SP-03 : Portes ══════════════════════════════════ -->
+    <ids:specification ifcVersion="IFC4X3_ADD2"
+                       name="Uniformat — Portes (IfcDoor)"
+                       identifier="SP-03"
+                       description="Chaque porte doit avoir une classification Uniformat."
+                       instructions="Appliquer un Assembly Code Uniformat à chaque porte dans Revit.">
+      <ids:applicability minOccurs="1" maxOccurs="unbounded">
+        <ids:entity>
+          <ids:name><ids:simpleValue>IFCDOOR</ids:simpleValue></ids:name>
+        </ids:entity>
+      </ids:applicability>
+      <ids:requirements>
+        <ids:classification cardinality="required" instructions="Code Uniformat requis. Ex: B2030 (porte ext.), C1030 (porte int.).">
+          <ids:system><ids:simpleValue>Uniformat</ids:simpleValue></ids:system>
+        </ids:classification>
+      </ids:requirements>
+    </ids:specification>
+
+    <!-- ══ SP-04 : Fenêtres ════════════════════════════════ -->
+    <ids:specification ifcVersion="IFC4X3_ADD2"
+                       name="Uniformat — Fenêtres (IfcWindow)"
+                       identifier="SP-04"
+                       description="Chaque fenêtre doit avoir une classification Uniformat."
+                       instructions="Appliquer un Assembly Code Uniformat à chaque fenêtre dans Revit.">
+      <ids:applicability minOccurs="1" maxOccurs="unbounded">
+        <ids:entity>
+          <ids:name><ids:simpleValue>IFCWINDOW</ids:simpleValue></ids:name>
+        </ids:entity>
+      </ids:applicability>
+      <ids:requirements>
+        <ids:classification cardinality="required" instructions="Code Uniformat requis. Ex: B2020 (fenêtre ext.), C1030 (fenêtre int.).">
+          <ids:system><ids:simpleValue>Uniformat</ids:simpleValue></ids:system>
+        </ids:classification>
+      </ids:requirements>
+    </ids:specification>
+
+    <!-- ══ SP-05 : Poteaux ═════════════════════════════════ -->
+    <ids:specification ifcVersion="IFC4X3_ADD2"
+                       name="Uniformat — Poteaux (IfcColumn)"
+                       identifier="SP-05"
+                       description="Chaque poteau doit avoir une classification Uniformat."
+                       instructions="Appliquer un Assembly Code Uniformat à chaque poteau dans Revit.">
+      <ids:applicability minOccurs="1" maxOccurs="unbounded">
+        <ids:entity>
+          <ids:name><ids:simpleValue>IFCCOLUMN</ids:simpleValue></ids:name>
+        </ids:entity>
+      </ids:applicability>
+      <ids:requirements>
+        <ids:classification cardinality="required" instructions="Code Uniformat requis. Ex: B1010 (poteau structure).">
+          <ids:system><ids:simpleValue>Uniformat</ids:simpleValue></ids:system>
+        </ids:classification>
+      </ids:requirements>
+    </ids:specification>
+
+    <!-- ══ SP-06 : Semelles ════════════════════════════════ -->
+    <ids:specification ifcVersion="IFC4X3_ADD2"
+                       name="Uniformat — Semelles (IfcFooting)"
+                       identifier="SP-06"
+                       description="Chaque semelle doit avoir une classification Uniformat."
+                       instructions="Appliquer un Assembly Code Uniformat à chaque semelle dans Revit.">
+      <ids:applicability minOccurs="1" maxOccurs="unbounded">
+        <ids:entity>
+          <ids:name><ids:simpleValue>IFCFOOTING</ids:simpleValue></ids:name>
+        </ids:entity>
+      </ids:applicability>
+      <ids:requirements>
+        <ids:classification cardinality="required" instructions="Code Uniformat requis. Ex: A1010 (semelles standard).">
+          <ids:system><ids:simpleValue>Uniformat</ids:simpleValue></ids:system>
+        </ids:classification>
+      </ids:requirements>
+    </ids:specification>
+
+    <!-- ══ SP-07 : Toiture ═════════════════════════════════ -->
+    <ids:specification ifcVersion="IFC4X3_ADD2"
+                       name="Uniformat — Toiture (IfcRoof)"
+                       identifier="SP-07"
+                       description="Chaque toiture doit avoir une classification Uniformat."
+                       instructions="Appliquer un Assembly Code Uniformat à chaque toiture dans Revit.">
+      <ids:applicability minOccurs="1" maxOccurs="unbounded">
+        <ids:entity>
+          <ids:name><ids:simpleValue>IFCROOF</ids:simpleValue></ids:name>
+        </ids:entity>
+      </ids:applicability>
+      <ids:requirements>
+        <ids:classification cardinality="required" instructions="Code Uniformat requis. Ex: B3010 (toiture terrasse), B3020 (toiture en pente).">
+          <ids:system><ids:simpleValue>Uniformat</ids:simpleValue></ids:system>
+        </ids:classification>
+      </ids:requirements>
+    </ids:specification>
+
+    <!-- ══ SP-08 : Escaliers ═══════════════════════════════ -->
+    <ids:specification ifcVersion="IFC4X3_ADD2"
+                       name="Uniformat — Escaliers (IfcStair)"
+                       identifier="SP-08"
+                       description="Chaque escalier doit avoir une classification Uniformat."
+                       instructions="Appliquer un Assembly Code Uniformat à chaque escalier dans Revit.">
+      <ids:applicability minOccurs="1" maxOccurs="unbounded">
+        <ids:entity>
+          <ids:name><ids:simpleValue>IFCSTAIR</ids:simpleValue></ids:name>
+        </ids:entity>
+      </ids:applicability>
+      <ids:requirements>
+        <ids:classification cardinality="required" instructions="Code Uniformat requis. Ex: C2010 (escalier).">
+          <ids:system><ids:simpleValue>Uniformat</ids:simpleValue></ids:system>
+        </ids:classification>
+      </ids:requirements>
+    </ids:specification>
+
+    <!-- ══ SP-09 : Revêtements ═════════════════════════════ -->
+    <ids:specification ifcVersion="IFC4X3_ADD2"
+                       name="Uniformat — Revêtements (IfcCovering)"
+                       identifier="SP-09"
+                       description="Chaque revêtement doit avoir une classification Uniformat."
+                       instructions="Appliquer un Assembly Code Uniformat à chaque revêtement dans Revit.">
+      <ids:applicability minOccurs="1" maxOccurs="unbounded">
+        <ids:entity>
+          <ids:name><ids:simpleValue>IFCCOVERING</ids:simpleValue></ids:name>
+        </ids:entity>
+      </ids:applicability>
+      <ids:requirements>
+        <ids:classification cardinality="required" instructions="Code Uniformat requis. Ex: C3010 (sol), C3020 (mur), C3030 (plafond).">
+          <ids:system><ids:simpleValue>Uniformat</ids:simpleValue></ids:system>
+        </ids:classification>
+      </ids:requirements>
+    </ids:specification>
+
+    <!-- ══ SP-10 : Garde-corps ═════════════════════════════ -->
+    <ids:specification ifcVersion="IFC4X3_ADD2"
+                       name="Uniformat — Garde-corps (IfcRailing)"
+                       identifier="SP-10"
+                       description="Chaque garde-corps doit avoir une classification Uniformat."
+                       instructions="Appliquer un Assembly Code Uniformat à chaque garde-corps dans Revit.">
+      <ids:applicability minOccurs="1" maxOccurs="unbounded">
+        <ids:entity>
+          <ids:name><ids:simpleValue>IFCRAILING</ids:simpleValue></ids:name>
+        </ids:entity>
+      </ids:applicability>
+      <ids:requirements>
+        <ids:classification cardinality="required" instructions="Code Uniformat requis. Ex: C2020 (garde-corps, main courante).">
+          <ids:system><ids:simpleValue>Uniformat</ids:simpleValue></ids:system>
+        </ids:classification>
+      </ids:requirements>
+    </ids:specification>
+
+  </ids:specifications>
+
+</ids:ids>
