@@ -65,20 +65,20 @@ def download_webifc():
         os.path.exists(os.path.join(WEBIFC_DIR, f)) for f in WEBIFC_FILES
     )
     if all_present:
-        print(f"  ✓ web-ifc {WEBIFC_VER} déjà en cache ({WEBIFC_DIR})")
+        print(f"  [OK] web-ifc {WEBIFC_VER} deja en cache ({WEBIFC_DIR})")
         return
 
-    print(f"  ⬇ Téléchargement de web-ifc {WEBIFC_VER}…")
+    print(f"  [>>] Telechargement de web-ifc {WEBIFC_VER}...")
     print(f"    (Conseil : lancez setup_webifc.py pour une installation plus robuste)")
     for fname in WEBIFC_FILES:
         dest = os.path.join(WEBIFC_DIR, fname)
         if os.path.exists(dest):
-            print(f"    · {fname} — déjà présent")
+            print(f"    . {fname} -- deja present")
             continue
         downloaded = False
         for base in WEBIFC_CDNS:
             url = base + fname
-            print(f"    · {fname} ({base.split('/')[2]})…", end=" ", flush=True)
+            print(f"    . {fname} ({base.split('/')[2]})...", end=" ", flush=True)
             try:
                 urllib.request.urlretrieve(url, dest)
                 size = os.path.getsize(dest)
@@ -88,9 +88,9 @@ def download_webifc():
             except Exception as e:
                 print(f"ERREUR : {e}")
         if not downloaded:
-            print(f"      → Téléchargez manuellement {fname}")
-            print(f"        et placez-le dans {WEBIFC_DIR}/")
-    print("  ✓ web-ifc prêt")
+            print(f"      -> Telechargez manuellement {fname}")
+            print(f"         et placez-le dans {WEBIFC_DIR}/")
+    print("  [OK] web-ifc pret")
 
 
 # ═══════════════════════════════════════════════════════════
@@ -394,14 +394,15 @@ def ping():
 
 if __name__ == "__main__":
     print("=" * 60)
-    print(f"  Serveur IDS v4 — http://localhost:5000")
+    print("  Serveur IDS - http://localhost:5000")
     print("=" * 60)
     download_webifc()
     print()
     print("  Routes :")
-    print("  POST /valider            → validation IFC + IDS")
-    print("  GET  /ifc                → fichier IFC pour web-ifc")
-    print("  GET  /web-ifc/<fichier>  → fichiers WASM servis localement")
-    print("  GET  /ping               → test de connexion")
+    print("  GET  /               -> interface utilisateur")
+    print("  POST /valider        -> validation IFC + IDS")
+    print("  GET  /ifc            -> fichier IFC pour web-ifc")
+    print("  GET  /web-ifc/<f>    -> fichiers WASM servis localement")
+    print("  GET  /ping           -> test de connexion")
     print("=" * 60)
     app.run(host="0.0.0.0", port=5000, debug=False)
