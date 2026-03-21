@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>IDS Validator — BIM Quality Control</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/src/style.css"/>
+</head>
+<body>
+<div class="app">
+<div class="topbar">
+  <span class="logo-tag">BIM</span><span class="logo">IDS <span>Validator</span></span>
+  <div class="srv"><div class="sdot ok" id="sdot"></div><span id="slbl">Prêt</span></div>
+</div>
+<div class="tabnav">
+  <button class="tbtn active" data-tab="upload">① Upload &amp; Validation</button>
+  <button class="tbtn" data-tab="viewer">② 3D Viewer</button>
+  <button class="tbtn" data-tab="dashboard">③ Dashboard</button>
+</div>
+<div class="panels">
+
+<!-- UPLOAD -->
+<div class="panel active" id="tab-upload">
+<div class="upload-wrap">
+  <div class="sec-title" style="margin-bottom:14px">Fichiers source</div>
+  <div class="drop-grid">
+    <div class="dzone" id="zIfc"><input type="file" id="iIfc" accept=".ifc"/>
+      <span class="dzone-icon">🏗️</span><div class="dzone-lbl">Fichier IFC</div>
+      <div class="dzone-hint">Glisser ou cliquer — .ifc</div><div class="dzone-name" id="nIfc"></div>
+    </div>
+    <div class="dzone" id="zIds"><input type="file" id="iIds" accept=".ids,.xml"/>
+      <span class="dzone-icon">📋</span><div class="dzone-lbl">Fichier IDS</div>
+      <div class="dzone-hint">Glisser ou cliquer — .ids / .xml</div><div class="dzone-name" id="nIds"></div>
+    </div>
+  </div>
+  <button class="btn-run" id="btnRun" disabled>Sélectionner les deux fichiers</button>
+  <div class="err-box" id="errBox"></div>
+  <div class="bilan-row" id="bilanRow" style="display:none">
+    <div class="bcard c-blu"><div class="v" id="bEl">—</div><div class="l">Éléments testés</div></div>
+    <div class="bcard c-acc"><div class="v" id="bSp">—</div><div class="l">Exigences IDS</div></div>
+    <div class="bcard c-grn"><div class="v" id="bOk">—</div><div class="l">Conformes</div></div>
+    <div class="bcard c-red"><div class="v" id="bKo">—</div><div class="l">Non conformes</div></div>
+    <div class="bcard c-pur"><div class="v" id="bPct">—</div><div class="l">Conformité</div></div>
+  </div>
+  <div id="specsWrap" style="display:none">
+    <div class="sec-title">Résultats par exigence</div>
+    <div id="specsList"></div>
+    <div class="xbar">
+      <button class="xbtn" id="btnJson">⬇ JSON</button>
+      <button class="xbtn" id="btnCsv">⬇ CSV</button>
+      <button class="xbtn" id="btnGo3d">→ 3D Viewer</button>
+      <button class="xbtn" id="btnGoDash">→ Dashboard</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- 3D VIEWER -->
+<div class="panel" id="tab-viewer">
+<div class="viewer-wrap">
+  <div class="vtb">
+    <button class="vtbtn" id="tb-home" title="Centrer vue [F]">⌂</button>
+    <div class="vtb-sep"></div>
+    <button class="vtbtn active" id="tb-select" title="Sélection [S]">↖</button>
+    <button class="vtbtn" id="tb-measure" title="Mesure distance [M]">⊢</button>
+    <button class="vtbtn" id="tb-clip" title="Plan de coupe [C]">⊟</button>
+    <div class="vtb-sep"></div>
+    <button class="vtbtn" id="tb-wire" title="Mode filaire [W]">⬡</button>
+    <button class="vtbtn" id="tb-xray" title="Mode X-Ray [X]">◈</button>
+    <div class="vtb-sep"></div>
+    <button class="vtbtn" id="tb-iso" title="Isoler sélection [I]">⊕</button>
+    <button class="vtbtn" id="tb-hide" title="Masquer sélection [H]">⊖</button>
+    <button class="vtbtn" id="tb-showall" title="Tout afficher [A]">⊙</button>
+    <div class="vtb-sep"></div>
+    <button class="vtbtn active" id="tb-all" title="Tous les éléments">≡</button>
+    <button class="vtbtn" id="tb-ok"  title="Conformes">✓</button>
+    <button class="vtbtn" id="tb-ko"  title="Non conformes">✗</button>
+    <div class="vtb-sep"></div>
+    <button class="vtbtn" id="tb-kb" title="Raccourcis clavier">?</button>
+    <div class="vtb-sep"></div>
+    <button class="vtbtn" id="tb-bg" title="Fond clair / sombre">☀</button>
+  </div>
+
+  <div class="canvas-zone" id="canvasZone">
+    <canvas id="viewerCanvas"></canvas>
+
+    <div class="clip-panel" id="clipPanel">
+      <div class="clip-label">Plan de coupe</div>
+      <div class="clip-axis-row">
+        <button class="clip-axis-btn" data-axis="x">X</button>
+        <button class="clip-axis-btn active" data-axis="y">Y</button>
+        <button class="clip-axis-btn" data-axis="z">Z</button>
+        <button class="clip-axis-btn" id="btnClipFlip" title="Inverser direction">⇅</button>
+      </div>
+      <input type="range" id="clipSlider" class="clip-slider" min="0" max="100" value="50">
+      <div class="clip-val"><span id="clipVal">50%</span></div>
+    </div>
+
+    <div class="v-loading hidden" id="vLoading">
+      <div class="v-load-title pulse">Chargement du modèle 3D…</div>
+      <div class="v-progress-bar"><div class="v-progress-fill" id="vProgressFill"></div></div>
+      <div class="v-load-sub" id="vLoadSub">Initialisation…</div>
+      <div class="v-log" id="vLog"></div>
+    </div>
+
+    <div class="vph" id="vph">
+      <div class="vph-big">🏛️</div>
+      <div class="vph-msg">Aucun modèle chargé</div>
+      <div class="vph-sub">Validez un fichier IFC dans l'onglet Upload<br/>puis cliquez sur "→ 3D Viewer"</div>
+    </div>
+
+    <div class="v-tooltip" id="vTooltip">
+      <div class="vtt-type" id="vttType"></div>
+      <div class="vtt-nom"  id="vttNom"></div>
+      <div class="vtt-stat" id="vttStat"></div>
+    </div>
+
+    <div class="v-overlay" id="vOverlay" style="display:none">
+      <div class="filter-pills">
+        <span class="fpill all on" data-f="all">Tous</span>
+        <span class="fpill ok"     data-f="ok">✓ Conformes</span>
+        <span class="fpill ko"     data-f="ko">✗ Non conformes</span>
+      </div>
+    </div>
+
+    <div id="measureContainer" style="position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:4"></div>
+
+    <div class="kb-hint" id="kbHint">
+      <b style="color:var(--txth)">Raccourcis</b><br/>
+      <kbd>F</kbd> Centrer vue &nbsp; <kbd>S</kbd> Sélection<br/>
+      <kbd>M</kbd> Mesure &nbsp; <kbd>C</kbd> Coupe<br/>
+      <kbd>W</kbd> Filaire &nbsp; <kbd>X</kbd> X-Ray<br/>
+      <kbd>I</kbd> Isoler &nbsp; <kbd>H</kbd> Masquer &nbsp; <kbd>A</kbd> Tout afficher<br/>
+      <kbd>Suppr</kbd> Effacer mesures &nbsp; <kbd>Échap</kbd> Désélectionner
+    </div>
+  </div>
+
+  <div class="props-panel">
+    <div class="pp-hdr">
+      <div class="pp-title">Propriétés</div>
+      <div class="pp-sub" id="ppSub">Cliquer un élément</div>
+    </div>
+    <div class="pp-body" id="ppBody">
+      <div class="pp-empty">🖱️ Cliquer un élément<br/>dans la vue 3D<br/>pour voir ses propriétés</div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- DASHBOARD -->
+<div class="panel" id="tab-dashboard">
+<div class="dash-wrap">
+  <div class="dash-header">
+    <div class="gauge-card">
+      <div class="gauge-label-top">Conformité globale</div>
+      <div class="gauge-svg-wrap"><svg viewBox="0 0 110 110">
+        <path d="M12,98 A55,55 0 0,1 98,98" fill="none" stroke="#1c2128" stroke-width="10" stroke-linecap="round"/>
+        <path id="gaugeArc" d="M12,98 A55,55 0 0,1 98,98" fill="none" stroke="#00e5a0" stroke-width="10" stroke-linecap="round" stroke-dasharray="173" stroke-dashoffset="173" style="transition:stroke-dashoffset 1s ease"/>
+      </svg></div>
+      <div class="gauge-pct-wrap"><div class="gauge-pct" id="gaugePct" style="color:var(--grn)">—</div><div class="gauge-sub">de conformité</div></div>
+    </div>
+    <div class="mini-chart-card"><div class="mcc-title">Conformes vs Non conformes</div><canvas id="chartPie" class="mcc-canvas"></canvas></div>
+    <div class="mini-chart-card"><div class="mcc-title">Résultats par type IFC</div><canvas id="chartBar" class="mcc-canvas"></canvas></div>
+  </div>
+  <div class="tbl-card">
+    <div class="tbl-header">
+      <div class="tbl-title-row"><span class="tbl-title">Tableau récapitulatif</span><span class="tbl-count" id="tblCount"></span></div>
+      <div class="tbl-controls">
+        <div class="pill-row">
+          <span class="pill all on" data-f="all">Tous</span>
+          <span class="pill ok"     data-f="ok">✓ Conformes</span>
+          <span class="pill ko"     data-f="ko">✗ Non conformes</span>
+        </div>
+        <input class="tsearch" id="tSearch" placeholder="Rechercher…"/>
+        <select class="tsel" id="tType"><option value="">Tous les types</option></select>
+        <select class="tsel" id="tSpec"><option value="">Toutes les exigences</option></select>
+        <button class="xbtn" id="btnTblCsv">⬇ CSV</button>
+      </div>
+    </div>
+    <div class="tbl-scroll">
+      <table><thead><tr>
+        <th data-col="id">ID <span class="si">↕</span></th>
+        <th data-col="guid">GUID <span class="si">↕</span></th>
+        <th data-col="type">Type IFC <span class="si">↕</span></th>
+        <th data-col="nom">Nom <span class="si">↕</span></th>
+        <th data-col="etage">Étage <span class="si">↕</span></th>
+        <th data-col="spec">Exigence IDS <span class="si">↕</span></th>
+        <th data-col="classif">Classification <span class="si">↕</span></th>
+        <th data-col="mat">Matériaux <span class="si">↕</span></th>
+        <th data-col="conforme">Statut <span class="si">↕</span></th>
+      </tr></thead>
+      <tbody id="tblBody"><tr><td colspan="9" style="text-align:center;color:var(--txtd);padding:40px">
+        Validez un fichier IFC pour afficher les données
+      </td></tr></tbody></table>
+    </div>
+    <div class="tbl-foot"><span id="tblFoot">—</span>
+      <div style="display:flex;gap:10px"><span id="tblOkCount" style="color:var(--grn)"></span><span id="tblKoCount" style="color:var(--red)"></span></div>
+    </div>
+  </div>
+</div>
+</div>
+
+</div><!-- /panels -->
+</div><!-- /app -->
+
+<script type="module" src="/src/main.js"></script>
+</body>
+</html>

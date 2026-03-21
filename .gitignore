@@ -1,4 +1,20 @@
-# Environnements virtuels Python
+# Dépendances
+node_modules/
+
+# Build Vite
+dist/
+
+# Build Electron
+dist-electron/
+
+# Fichiers WASM générés automatiquement (recréés par npm install)
+public/*.wasm
+public/*.js
+
+# Fichiers IFC (volumineux)
+*.ifc
+
+# Python (ancien stack — plus utilisé)
 .venv/
 .venv-1/
 venv/
@@ -9,14 +25,11 @@ __pycache__/
 *.pyd
 .Python
 
-# Fichiers IFC (souvent volumineux)
-*.ifc
-
-# Cache web-ifc (régénéré par setup_webifc.py)
+# Cache web-ifc (ancien)
 web-ifc-cache/
 web-ifc-cache_old/
 
-# Dossier temporaire
+# Divers
 Temp/
 
 # Éditeurs

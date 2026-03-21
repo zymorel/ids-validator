@@ -1,0 +1,23 @@
+{
+  "appId": "com.ids-validator.app",
+  "productName": "IDS Validator",
+  "directories": {
+    "output": "dist-electron"
+  },
+  "files": [
+    "dist/**/*",
+    "electron/**/*"
+  ],
+  "asar": false,
+  "win": {
+    "target": {
+      "target": "portable",
+      "arch": ["x64"]
+    },
+    "sign": null,
+    "signAndEditExecutable": false
+  },
+  "portable": {
+    "artifactName": "IDSValidator-portable.exe"
+  }
+}

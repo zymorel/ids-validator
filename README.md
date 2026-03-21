@@ -1,148 +1,128 @@
 # IDS Validator
 
-Outil de contrôle qualité BIM permettant de valider des modèles IFC contre des spécifications IDS (Information Delivery Specification).
+Outil de contrôle qualité BIM : valide des modèles IFC contre des spécifications IDS (Information Delivery Specification), avec visualisation 3D et tableau de bord.
 
-![Interface](https://img.shields.io/badge/interface-web-blue) ![Python](https://img.shields.io/badge/python-3.8+-green) ![License](https://img.shields.io/badge/license-MIT-lightgrey)
+**100 % hors-ligne — aucun serveur requis.**
+
+![Interface](https://img.shields.io/badge/interface-web%20%2B%20desktop-blue)
+![Stack](https://img.shields.io/badge/stack-Vite%20%2B%20web--ifc%20%2B%20Three.js-green)
+![License](https://img.shields.io/badge/license-MIT-lightgrey)
+
+---
 
 ## Fonctionnalités
 
-- **Validation IFC/IDS** : Vérifie la conformité des éléments d'un modèle IFC par rapport aux exigences définies dans un fichier IDS
-- **Visualisation 3D** : Affiche le modèle en 3D avec les éléments conformes (vert) et non conformes (rouge) via [web-ifc](https://github.com/ThatOpen/engine_web-ifc)
-- **Tableau de bord** : Statistiques globales, graphiques de conformité par type d'élément
-- **Inspection d'éléments** : Panneau latéral affichant les propriétés, classifications et matériaux de chaque élément
-- **Export de résultats** : Vue tabulaire complète de tous les éléments avec leur statut
+- **Validation IFC/IDS complète** — entité, attribut, propriété, classification, matériau
+- **Visualisation 3D** — conformes en vert, non conformes en rouge, fond clair ou sombre
+- **Tableau de bord** — jauge de conformité, graphiques par type IFC
+- **Tableau récapitulatif** — filtres, recherche, tri, export CSV
+- **Export JSON / CSV** des résultats
+- **Application desktop** — packaging Electron (portable `.exe`, aucune installation)
 
-## Prérequis
+---
 
-- Python 3.8+
-- Un navigateur moderne avec support WebGL (Chrome, Firefox, Edge)
+## Stack technique
 
-## Installation
+| Outil | Rôle |
+|---|---|
+| [Vite](https://vitejs.dev/) | Bundler / serveur de développement |
+| [web-ifc 0.0.74](https://github.com/ThatOpen/engine_web-ifc) | Parsing IFC via WASM |
+| [Three.js](https://threejs.org/) | Rendu 3D |
+| [Chart.js](https://www.chartjs.org/) | Graphiques dashboard |
+| [Electron](https://www.electronjs.org/) | Application desktop |
 
-### 1. Cloner le dépôt
+---
+
+## Démarrage rapide
+
+### Prérequis
+
+- [Node.js](https://nodejs.org/) 18+
+
+### Installation
 
 ```bash
-git clone https://github.com/<votre-utilisateur>/ids-validator.git
+git clone https://github.com/zymorel/ids-validator.git
 cd ids-validator
+npm install
 ```
 
-### 2. Créer un environnement virtuel et installer les dépendances
+> `npm install` copie automatiquement les fichiers WASM de web-ifc dans `public/`.
+
+### Lancer en développement
 
 ```bash
-python -m venv .venv
-# Windows
-.venv\Scripts\activate
-# Linux/macOS
-source .venv/bin/activate
-
-pip install -r requirements.txt
+npm run dev
 ```
 
-> **Note `ifcopenshell`** : Si l'installation via pip échoue, utilisez conda :
-> ```bash
-> conda install -c conda-forge ifcopenshell
-> ```
+Ouvrir [http://localhost:5173/ids-validator/](http://localhost:5173/ids-validator/)
 
-### 3. Télécharger les fichiers web-ifc
+### Build de production
 
 ```bash
-python setup_webifc.py
+npm run build
 ```
 
-Ce script télécharge automatiquement les fichiers nécessaires (JS + WASM) via npm ou CDN. Une connexion internet est requise lors du premier lancement.
+---
+
+## Application desktop (Electron)
+
+### Lancer en mode Electron (dev)
+
+```bash
+npm run electron:dev
+```
+
+### Créer le `.exe` portable
+
+```bash
+npm run build
+CSC_IDENTITY_AUTO_DISCOVERY=false npx electron-builder
+```
+
+Le fichier `IDSValidator-portable.exe` est généré dans `dist-electron/`.
+Il est autonome — aucune installation requise, fonctionne sans connexion internet.
+
+---
 
 ## Utilisation
 
-### Lancer le serveur
+1. **Onglet Upload & Validation** — glisser-déposer un fichier `.ifc` et un fichier `.ids` / `.xml`
+2. Cliquer **▶ Lancer la validation**
+3. Consulter les résultats par exigence IDS
+4. **Onglet 3D Viewer** — visualiser le modèle colorié (vert = conforme, rouge = non conforme)
+5. **Onglet Dashboard** — graphiques et tableau de bord global
 
-```bash
-python serveur_ids.py
-```
+---
 
-Le serveur démarre sur `http://localhost:5000`.
+## Exemples
 
-### Ouvrir l'interface
+Le dossier `examples/` contient des fichiers IDS de démonstration.
 
-Ouvrir **`http://localhost:5000`** dans un navigateur. L'interface est servie directement par Flask.
+---
 
-### Valider un modèle
-
-1. Glisser-déposer un fichier `.ifc` dans la zone de dépôt IFC
-2. Glisser-déposer un fichier `.ids` dans la zone de dépôt IDS
-3. Cliquer sur **VALIDER**
-4. Explorer les résultats dans les onglets : Spécifications, Visionneuse 3D, Éléments
-
-## Fichiers exemples
-
-Le dépôt inclut des fichiers IDS d'exemple :
-
-| Fichier | Description |
-|--------|-------------|
-| `examples/uniformat_classification.ids` | 22 spécifications de classification Uniformat pour les principaux types d'éléments (murs, dalles, portes, fenêtres…) |
-| `examples/uniformat_murs.ids` | Spécification simplifiée pour les murs uniquement |
-
-## Architecture
+## Structure du projet
 
 ```
 ids-validator/
-├── examples/
-│   ├── uniformat_classification.ids  # Exemple IDS complet (22 spécifications)
-│   └── uniformat_murs.ids            # Exemple IDS simplifié (murs uniquement)
-├── .gitignore
-├── LICENSE
-├── README.md
-├── ids_validator.html      # Interface utilisateur (SPA)
-├── requirements.txt
-├── serveur_ids.py          # Serveur Flask (API REST)
-├── setup_webifc.py         # Script de configuration web-ifc
-└── web-ifc-cache/          # Cache local des fichiers web-ifc (généré par setup_webifc.py)
+├── index.html              # Point d'entrée HTML
+├── vite.config.js          # Configuration Vite
+├── electron-builder.json   # Configuration packaging .exe
+├── package.json
+├── electron/
+│   └── main.cjs            # Process principal Electron
+├── scripts/
+│   └── copy-wasm.js        # Copie WASM au postinstall
+├── public/                 # Fichiers WASM (auto-générés)
+├── src/
+│   ├── main.js             # Logique UI + viewer 3D
+│   ├── validator.js        # Moteur de validation IDS (pur JS)
+│   └── style.css           # Styles
+└── examples/               # Fichiers IDS d'exemple
 ```
 
-### API REST
-
-| Méthode | Route | Description |
-|--------|-------|-------------|
-| `GET` | `/` | Interface utilisateur |
-| `GET` | `/ping` | Vérification de l'état du serveur |
-| `POST` | `/valider` | Validation IFC + IDS (retourne JSON) |
-| `GET` | `/ifc` | Récupère le fichier IFC en mémoire |
-| `GET` | `/web-ifc/<fichier>` | Fichiers web-ifc servis localement |
-
-### Corps de la requête `/valider`
-
-`multipart/form-data` avec :
-- `ifc` : fichier `.ifc`
-- `ids` : fichier `.ids`
-
-### Format de réponse `/valider`
-
-```json
-{
-  "modele": { "nom": "...", "schema": "IFC4X3_ADD2", "elements": 123 },
-  "specifications": [
-    {
-      "name": "Murs - Classification Uniformat",
-      "status": "PASS",
-      "passed": 10,
-      "failed": 2,
-      "passed_elements": [...],
-      "failed_elements": [...]
-    }
-  ],
-  "bilan": { "total_specs": 5, "specs_ok": 3, "specs_fail": 2 },
-  "ids_3d": { "passed": [101, 102], "failed": [103] }
-}
-```
-
-## Technologies utilisées
-
-- **Backend** : Python, Flask, [ifcopenshell](https://ifcopenshell.org/), [ifctester](https://pypi.org/project/ifctester/)
-- **Frontend** : HTML/CSS/JavaScript vanilla, Chart.js, Three.js, web-ifc
-
-## Contribuer
-
-Les contributions sont les bienvenues ! N'hésitez pas à ouvrir une _issue_ pour signaler un bug ou proposer une amélioration, ou à soumettre une _pull request_.
+---
 
 ## Licence
 
-Ce projet est distribué sous licence MIT. Voir le fichier [LICENSE](LICENSE) pour plus de détails.
+MIT
